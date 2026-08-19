@@ -56,6 +56,7 @@ Verify:
 
 - Spring Boot resolves to exactly `4.0.7`;
 - Spring Framework resolves to `7.0.8`, Spring Security to `7.0.6`, Micrometer to `1.16.6`, Micrometer Tracing to `1.6.6`, OpenTelemetry API/SDK to `1.55.0`, Kotlin to `2.2.21`, and Logback to `1.5.34`;
+- `org.springframework.boot:spring-boot-starter-opentelemetry` is the source of the Boot-managed Micrometer/OpenTelemetry tracing and OTLP runtime graph;
 - `opentelemetry-logback-appender-1.0` resolves to exactly `2.21.0-alpha`;
 - the starter depends on auto-configuration and non-web prerequisites but does not resolve `spring-boot-starter-web` or `spring-boot-starter-webflux`;
 - versionless platform dependency declarations resolve through the BOM.
@@ -147,7 +148,7 @@ Verify four controlled modes:
 1. no endpoint: W3C propagation/correlation active, no exporter;
 2. recording local collector: sampling `1.0` produces a received OTLP trace;
 3. invalid/rejecting collector: requests still return their intended status and logs/errors remain correlated;
-4. application OpenTelemetry/export customizer: platform tracing contribution backs off or composes as documented without changing other capabilities.
+4. application OpenTelemetry/export customizer: platform tracing contribution backs off or composes as documented without changing other capabilities; the platform adapts its canonical properties to Boot's OpenTelemetry configuration rather than requiring consumer-side `management.opentelemetry.*` settings.
 
 For a failing request, compare the inbound/outbound trace ID, problem `traceId`, and parsed log `traceId`. Span IDs are allowed to differ.
 
@@ -180,7 +181,7 @@ Run:
 ./gradlew :logistics-parent-service-autoconfigure:webfluxIntegrationTest --tests '*Metrics*'
 ```
 
-Expected: the fixtures record a counter, timer, and gauge using only Micrometer APIs; all three are visible in `SimpleMeterRegistry`; configured safe common tags exist; no OpenTelemetry Metrics API or forced backend registry is needed.
+Expected: the fixtures record a counter, timer, and gauge using only Micrometer APIs; all three are visible in `SimpleMeterRegistry`; configured safe common tags exist; no OpenTelemetry Metrics API or configured metrics endpoint is needed.
 
 ## Scenario 9: Structured Logging and Redaction
 
@@ -190,7 +191,7 @@ Run:
 ./gradlew :logistics-parent-service-autoconfigure:loggingTest
 ```
 
-The suite loads the real platform `logback-spring.xml`, initializes the approved 2.21.0-alpha OTel appender against a controlled OpenTelemetry log sink, and emits the corpus described in [contracts/logging.md](./contracts/logging.md).
+The suite loads the real platform `logback-spring.xml`, initializes the separately managed approved 2.21.0-alpha OTel appender against a controlled OpenTelemetry log sink, and emits the corpus described in [contracts/logging.md](./contracts/logging.md). The tracing/OTLP runtime itself comes from `spring-boot-starter-opentelemetry`.
 
 Expected:
 

@@ -69,7 +69,7 @@ Invariant: W3C Trace Context is the platform propagation format. Export can be a
 | `enabled` | Boolean | `true` | Disables only the platform metrics contribution. |
 | `commonTags` | Map<String,String> | empty | Keys and values nonblank; no credential or personal-data values. |
 
-Invariant: application metrics use Micrometer `MeterRegistry`; the platform does not expose an OpenTelemetry `MeterProvider` as the application API and does not select a backend registry.
+Invariant: application metrics use Micrometer `MeterRegistry`; the platform does not expose an OpenTelemetry `MeterProvider` as the application API and does not configure a metrics endpoint. The Spring Boot OpenTelemetry starter may make an OTLP registry available transitively, but backend selection remains application-owned.
 
 ### 2.4 ErrorProperties
 

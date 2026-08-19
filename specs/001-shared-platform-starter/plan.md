@@ -12,7 +12,7 @@ Build one reusable Kotlin/JVM platform for ten HZ Logistics services with exactl
 
 **Language/Version**: Kotlin 2.2.21 (Spring Boot 4.0.7 managed line), Java 21 toolchain and bytecode target
 
-**Primary Dependencies**: Gradle Wrapper 9.3.0 with Kotlin DSL; Spring Boot 4.0.7; Spring Framework 7.0.8; Spring Security 7.0.6 OAuth2 Resource Server/Jose; Spring Boot Actuator; Micrometer 1.16.6 and Micrometer Tracing 1.6.6; OpenTelemetry 1.55.0 with OTLP; Logback 1.5.34; `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha`. Every runtime and test dependency version is supplied or constrained by `logistics-parent-service-bom`, primarily by importing the Spring Boot 4.0.7 BOM and adding an explicit constraint for the approved alpha appender.
+**Primary Dependencies**: Gradle Wrapper 9.3.0 with Kotlin DSL; Spring Boot 4.0.7; Spring Framework 7.0.8; Spring Security 7.0.6 OAuth2 Resource Server/Jose; Spring Boot Actuator; `org.springframework.boot:spring-boot-starter-opentelemetry` for Micrometer/OpenTelemetry tracing and OTLP; and `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha` for the required OTel logging sink. The Boot starter owns the Micrometer/OpenTelemetry runtime graph; the Logback appender is the only separately managed observability integration because Spring Boot does not ship it. Every runtime and test dependency version is supplied or constrained by `logistics-parent-service-bom`, primarily by importing the Spring Boot 4.0.7 BOM and adding an explicit constraint for the approved alpha appender.
 
 **Storage**: N/A. The platform contains no persistence, business state, migrations, or domain data.
 
@@ -134,7 +134,8 @@ logistics-parent-service-starter
 └── api(logistics-parent-service-autoconfigure + non-web platform prerequisites)
 
 logistics-parent-service-autoconfigure
-├── implementation(non-web Spring Boot/Security/observability APIs)
+├── implementation(non-web Spring Boot/Security APIs + spring-boot-starter-opentelemetry)
+├── compileOnly(OTel Logback appender and Logback APIs used by the logging implementation)
 └── compileOnly(Servlet/MVC and Reactive/WebFlux APIs)
 
 logistics-parent-service-bom
@@ -148,7 +149,7 @@ The BOM does not depend on implementation modules. The auto-configuration module
 - Register all candidates through `META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`; isolate MVC and WebFlux types in separately conditioned auto-configuration classes.
 - Compile configured public patterns once with Spring `PathPatternParser` and use the same grammar and matching helper in both security branches. Accept literal paths, `?` and segment `*`, and terminal `/**`; reject relative paths, empty/double segments, `..`, URI-template variables, inline regex, encoded-slash tricks, and non-terminal `**` at startup while security is active.
 - Create default security chains only when their selected stack is active and the application has not provided the corresponding `SecurityFilterChain` or `SecurityWebFilterChain`; application `JwtDecoder`/`ReactiveJwtDecoder` beans and documented authority converters are reused without disabling the platform chain. Security disablement backs off only security.
-- Configure Spring Boot's Micrometer/OpenTelemetry integration rather than creating a parallel observability stack. W3C propagation remains active without an exporter; an OTLP endpoint activates export, and application-provided observability components trigger only tracing back-off.
+- Use `spring-boot-starter-opentelemetry` as the single Boot-managed tracing/OTLP dependency instead of declaring Micrometer and OpenTelemetry SDK modules individually. Map the canonical `logistics.parent-service.tracing.*` properties to Spring Boot's tracing/export configuration or supported builder customizers. W3C propagation remains active without an exporter; an OTLP endpoint activates trace export, and application-provided observability components trigger only tracing back-off.
 - Route all platform-handled errors, including authentication and authorization failures, through a shared problem factory so MVC and WebFlux serialize the same fields and safe details.
 - Make redaction the single fan-out boundary before JSON encoding and the OpenTelemetry Logback appender. This prevents a second sink from seeing the raw event and is verified using a synthetic corpus that includes nested exception data.
 - Record compatibility-sensitive surfaces in contracts and require Semantic Versioning assessment and migration notes whenever they change.

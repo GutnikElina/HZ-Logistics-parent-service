@@ -17,13 +17,13 @@ description: "Actionable implementation tasks for the shared platform starter"
 
 **Purpose**: Establish the non-published Gradle aggregator and exactly three platform subprojects with the pinned Kotlin, Java, Spring Boot, and Gradle baselines.
 
-- [ ] T001 Create the non-published root aggregator and include exactly `logistics-parent-service-bom`, `logistics-parent-service-autoconfigure`, and `logistics-parent-service-starter` in `settings.gradle.kts`
-- [ ] T002 Configure shared repositories, Kotlin/JVM compilation, Java 21 toolchain and bytecode target, test conventions, group, and non-published root behavior in `build.gradle.kts`
-- [ ] T003 Pin project coordinates and shared baseline properties in `gradle.properties` and pin the Gradle 9.3.0 distribution in `gradle/wrapper/gradle-wrapper.properties`
-- [ ] T004 [P] Configure the `java-platform` BOM, Spring Boot 4.0.7 BOM import, platform version alignment, and dependency constraints in `logistics-parent-service-bom/build.gradle.kts`
-- [ ] T005 [P] Configure the Kotlin auto-configuration library, BOM consumption, compile-only MVC/WebFlux APIs, test source sets, and generated configuration metadata in `logistics-parent-service-autoconfigure/build.gradle.kts`
-- [ ] T006 [P] Configure the thin starter's API dependency on auto-configuration and non-web prerequisites without MVC or WebFlux starter dependencies in `logistics-parent-service-starter/build.gradle.kts`
-- [ ] T007 Create the planned Kotlin, resource, test-source-set, integration-source-set, logging-test, and redaction-corpus directories under `logistics-parent-service-autoconfigure/src/` and the source roots under `logistics-parent-service-starter/src/`
+- [X] T001 Create the non-published root aggregator and include exactly `logistics-parent-service-bom`, `logistics-parent-service-autoconfigure`, and `logistics-parent-service-starter` in `settings.gradle.kts`
+- [X] T002 Configure shared repositories, Kotlin/JVM compilation, Java 21 toolchain and bytecode target, test conventions, group, and non-published root behavior in `build.gradle.kts`
+- [X] T003 Pin project coordinates and shared baseline properties in `gradle.properties` and pin the Gradle 9.3.0 distribution in `gradle/wrapper/gradle-wrapper.properties`
+- [X] T004 [P] Configure the `java-platform` BOM, Spring Boot 4.0.7 BOM import, platform version alignment, and dependency constraints in `logistics-parent-service-bom/build.gradle.kts`
+- [X] T005 [P] Configure the Kotlin auto-configuration library, BOM consumption, Boot OpenTelemetry starter, compile-only MVC/WebFlux APIs, test source sets, and generated configuration metadata in `logistics-parent-service-autoconfigure/build.gradle.kts`
+- [X] T006 [P] Configure the thin starter's API dependency on auto-configuration, Boot OpenTelemetry starter, and non-web prerequisites without MVC or WebFlux starter dependencies in `logistics-parent-service-starter/build.gradle.kts`
+- [X] T007 Create the planned Kotlin, resource, test-source-set, integration-source-set, logging-test, and redaction-corpus directories under `logistics-parent-service-autoconfigure/src/` and the source roots under `logistics-parent-service-starter/src/`
 
 ---
 
@@ -56,7 +56,7 @@ description: "Actionable implementation tasks for the shared platform starter"
 
 ### Tests for User Story 1
 
-- [ ] T018 [P] [US1] Add a Gradle dependency-resolution test proving Boot 4.0.7, Kotlin 2.2.21, Spring Framework 7.0.8, Spring Security 7.0.6, Micrometer 1.16.6, Micrometer Tracing 1.6.6, OpenTelemetry 1.55.0, Logback 1.5.34, and `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha` resolve through `logistics-parent-service-bom/src/test/kotlin/com/hz/logistics/parentservice/bom/BomAlignmentTest.kt`
+- [ ] T018 [P] [US1] Add a Gradle dependency-resolution test proving `spring-boot-starter-opentelemetry` supplies the Boot-managed Micrometer/OpenTelemetry tracing and OTLP graph at Boot 4.0.7, including Kotlin 2.2.21, Spring Framework 7.0.8, Spring Security 7.0.6, Micrometer 1.16.6, Micrometer Tracing 1.6.6, OpenTelemetry 1.55.0, Logback 1.5.34, and the separately managed `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha`, through `logistics-parent-service-bom/src/test/kotlin/com/hz/logistics/parentservice/bom/BomAlignmentTest.kt`
 - [ ] T019 [P] [US1] Add a starter dependency contract test proving the starter exposes auto-configuration and non-web prerequisites but neither `spring-boot-starter-web` nor `spring-boot-starter-webflux` in `logistics-parent-service-starter/src/test/kotlin/com/hz/logistics/parentservice/starter/StarterDependencyContractTest.kt`
 - [ ] T020 [P] [US1] Add context tests for no-web, explicit Servlet, explicit Reactive, and both-classpaths-selected-branch behavior in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/AutoConfigurationSelectionTest.kt`
 - [ ] T021 [P] [US1] Add the minimal MVC adoption fixture and startup assertions using the public starter, MVC dependencies, and equivalent platform properties in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/MvcStarterAdoptionTest.kt` and `src/mvcIntegrationTest/resources/application-mvc.yml`
@@ -64,7 +64,7 @@ description: "Actionable implementation tasks for the shared platform starter"
 
 ### Implementation for User Story 1
 
-- [ ] T023 [US1] Complete the BOM's transitive dependency constraints and versionless consumer declarations for all platform, implementation, observability, logging, and test coordinates in `logistics-parent-service-bom/build.gradle.kts`
+- [ ] T023 [US1] Complete the BOM's transitive dependency constraints and versionless consumer declarations for the Boot OpenTelemetry starter, approved Logback appender, platform, logging, and test coordinates in `logistics-parent-service-bom/build.gradle.kts`
 - [ ] T024 [US1] Complete the thin starter dependency graph and verify its consumer-facing API configuration contains no implementation source or selected web-stack dependency in `logistics-parent-service-starter/build.gradle.kts`
 - [ ] T025 [US1] Complete the shared non-web auto-configuration registration and condition ordering so non-web capabilities load without either web stack in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/PlatformAutoConfiguration.kt`
 - [ ] T026 [US1] Add the representative MVC and WebFlux fixture controllers, application classes, and test-only dependency declarations needed by the adoption tests in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/` and `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/`
@@ -119,8 +119,8 @@ description: "Actionable implementation tasks for the shared platform starter"
 
 ### Implementation for User Story 3
 
-- [ ] T046 [US3] Implement platform tracing auto-configuration with Micrometer/OpenTelemetry integration, W3C propagation, configured sampling, managed-client instrumentation, and tracing-only conditions in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/PlatformTracingAutoConfiguration.kt`
-- [ ] T047 [US3] Implement OTLP endpoint/protocol/header/timeout/compression customization, batch/asynchronous export, and diagnostic-only exporter failure handling in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/OtlpTracingCustomizer.kt`
+- [ ] T046 [US3] Integrate Spring Boot's `spring-boot-starter-opentelemetry` auto-configuration with the platform tracing properties, W3C propagation, configured sampling, managed-client instrumentation, and tracing-only conditions in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/PlatformTracingAutoConfiguration.kt`
+- [ ] T047 [US3] Map canonical OTLP endpoint/protocol/header/timeout/compression settings to Spring Boot's supported OTLP configuration/customizers, preserving batch/asynchronous export and diagnostic-only exporter failure handling in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/OtlpTracingCustomizer.kt`
 - [ ] T048 [US3] Implement W3C propagator registration and invalid-carrier handling so malformed inbound context starts a new safe trace without failing request processing in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/W3cPropagationConfigurer.kt`
 - [ ] T049 [US3] Implement trace/span MDC correlation and error-time fallback correlation using the shared context abstraction in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/TraceCorrelationConfigurer.kt`
 - [ ] T050 [US3] Implement supported reactive context propagation across Reactor scheduling boundaries without attaching stale thread-local context in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/ReactiveTraceContextBridge.kt`
@@ -149,7 +149,7 @@ description: "Actionable implementation tasks for the shared platform starter"
 ### Implementation for User Story 4
 
 - [ ] T059 [US4] Implement Micrometer metrics auto-configuration, application registry reuse, validated common tags, and metrics-only back-off in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/metrics/PlatformMetricsAutoConfiguration.kt`
-- [ ] T060 [US4] Implement the platform metrics policy/customizer and safe tag validation without exposing an OpenTelemetry Metrics API or forcing a vendor registry in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/metrics/PlatformMetricsPolicy.kt`
+- [ ] T060 [US4] Implement the platform metrics policy/customizer and safe tag validation without exposing an OpenTelemetry Metrics API or configuring a vendor/OTLP metrics endpoint in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/metrics/PlatformMetricsPolicy.kt`
 - [ ] T061 [US4] Implement MVC controller/advice and framework-exception handling for validation, known errors, unhandled failures, content negotiation, committed responses, and safe ProblemDetail serialization in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/errors/mvc/PlatformMvcErrorAutoConfiguration.kt`
 - [ ] T062 [US4] Implement WebFlux controller/error-handler integration with non-blocking equivalent ProblemDetail serialization and independent handler back-off in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/errors/reactive/PlatformWebFluxErrorAutoConfiguration.kt`
 - [ ] T063 [US4] Implement baseline-plus-configured sensitive-value sanitization over messages, arguments, structured fields, headers, query values, and complete throwable projections in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/logging/PlatformLogSanitizer.kt`

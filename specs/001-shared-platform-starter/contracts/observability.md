@@ -2,7 +2,9 @@
 
 ## Tracing API and Implementation
 
-The platform uses Micrometer Observation/Tracing for Spring application instrumentation and an OpenTelemetry 1.55.0 SDK bridge for trace implementation and OTLP export. Application code may use Micrometer observation/tracing APIs; it is not required to use the OpenTelemetry tracing API directly.
+The platform uses Spring Boot 4.0.7's `spring-boot-starter-opentelemetry` for Micrometer Observation/Tracing integration, OpenTelemetry trace implementation, and OTLP export. Application code may use Micrometer observation/tracing APIs; it is not required to use the OpenTelemetry tracing API directly. The approved OTel Logback appender is managed separately because it is not included in Spring Boot.
+
+The platform's `logistics.parent-service.tracing.*` properties are the public contract. Auto-configuration maps them to Spring Boot's OpenTelemetry tracing/export configuration or supported exporter builder customizers, so consumer applications do not need to use the underlying `management.opentelemetry.*` namespace directly.
 
 ## W3C Propagation Contract
 
@@ -22,7 +24,7 @@ W3C validity rules apply: trace ID is 16 nonzero bytes, parent span ID is 8 nonz
 
 | State | Required behavior |
 |---|---|
-| No OTLP endpoint | No trace exporter is created by the platform; local tracing/propagation/correlation continue. |
+| No OTLP endpoint | No trace exporter is activated by the platform; local tracing/propagation/correlation continue. The starter's transitive registry support does not itself select a destination. |
 | Valid configured endpoint | Eligible sampled spans are exported asynchronously with configured protocol, headers, timeout, and compression. |
 | Collector rejects or is unavailable | Export failure is diagnostic only; requests, error responses, logs, and local metrics continue. |
 | Application exporter/customizer exists | Compatible application component is reused or the corresponding default backs off; other capabilities remain active. |
@@ -49,7 +51,7 @@ The platform:
 - enables Spring Boot/Micrometer infrastructure when `logistics.parent-service.metrics.enabled=true`;
 - applies validated safe `common-tags` through a platform customizer;
 - uses any application-selected registry and supports a `SimpleMeterRegistry` in tests;
-- does not force Prometheus, OTLP metrics, or another vendor backend;
+- does not configure or require a Prometheus, OTLP, or another vendor metrics endpoint; the Boot starter's optional OTLP registry support remains unused until an application selects/configures it;
 - does not require or document the OpenTelemetry Metrics API for business code;
 - never places credential values or unbounded personal data into tags.
 

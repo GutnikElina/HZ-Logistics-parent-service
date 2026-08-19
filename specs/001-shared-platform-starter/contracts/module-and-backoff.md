@@ -33,8 +33,9 @@ The BOM must:
 
 - import and pin `org.springframework.boot:spring-boot-dependencies:4.0.7`;
 - align both consumable platform artifacts to the platform release version;
+- manage `org.springframework.boot:spring-boot-starter-opentelemetry` through the imported Spring Boot BOM as the single Micrometer/OpenTelemetry tracing and OTLP dependency;
 - explicitly constrain `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha`;
-- govern Kotlin, Spring Framework, Spring Security, Micrometer, Micrometer Tracing, OpenTelemetry, Logback, test libraries, and any additional implementation dependency;
+- govern Kotlin, Spring Framework, Spring Security, the Boot observability starter, Logback, the approved external Logback appender, test libraries, and any additional implementation dependency;
 - allow all platform module dependency declarations and supported consumer examples to omit individual dependency versions;
 - fail dependency verification if Spring Boot resolves to a version other than `4.0.7`.
 
@@ -56,7 +57,7 @@ Each branch must require both its API class and selected `WebApplicationType`. M
 |---|---|---|---|
 | MVC security | Platform `SecurityFilterChain`, entry point, denied handler, converter/decoder defaults | Application `SecurityFilterChain`; application `JwtDecoder`/converter is reused without disabling the platform chain | MVC security only |
 | WebFlux security | Platform `SecurityWebFilterChain`, reactive entry/denied handler, converter/decoder defaults | Application `SecurityWebFilterChain`; application `ReactiveJwtDecoder`/converter is reused without disabling the platform chain | WebFlux security only |
-| Tracing | W3C propagation, Micrometer/OpenTelemetry bridge, optional OTLP customization | Compatible application `OpenTelemetry`, `SdkTracerProvider`, `ContextPropagators`, or documented exporter customizer | Tracing/export only |
+| Tracing | Spring Boot OTel starter, W3C propagation, Micrometer/OpenTelemetry bridge, optional OTLP customization | Compatible application `OpenTelemetry`, `SdkTracerProvider`, `ContextPropagators`, or documented exporter customizer | Tracing/export only |
 | Metrics | Platform Micrometer policy/common-tag customizer and fallback registry behavior | Application registry plus an application `PlatformMetricsCustomizer` for policy replacement | Metrics only |
 | Errors | Shared `PlatformProblemDetailFactory` and selected stack handler | Application factory or selected-stack compatible error handler | Errors only |
 | Logging | Default `logback-spring.xml`, `PlatformLogSanitizer`, redacting fan-out, OTel installer | Application logging resource/config; application `PlatformLogSanitizer` replaces sanitizer policy but must preserve baseline categories | Logging only |

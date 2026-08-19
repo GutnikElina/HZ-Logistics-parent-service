@@ -24,9 +24,9 @@ This research resolves every technical unknown for the Spring Boot 4.0.7 platfor
 
 ## 3. Starter Dependency Coordinates Without a Forced Web Stack
 
-**Decision**: The thin starter exposes the auto-configuration module and non-web prerequisites based on Spring Boot 4.0.7: OAuth2 resource-server/Jose support, Actuator/Micrometer, OpenTelemetry tracing with OTLP support, Logback, and the approved OpenTelemetry Logback appender. It must not depend on `spring-boot-starter-web` or `spring-boot-starter-webflux`. The auto-configuration module compiles against MVC, Servlet, WebFlux, and reactive security APIs as optional/compile-only dependencies and isolates their references by branch.
+**Decision**: The thin starter exposes the auto-configuration module and non-web prerequisites based on Spring Boot 4.0.7: OAuth2 resource-server/Jose support, Actuator, `spring-boot-starter-opentelemetry` for the complete Boot-managed Micrometer/OpenTelemetry tracing and OTLP graph, and the approved OpenTelemetry Logback appender because that appender is not part of Spring Boot. It must not depend on `spring-boot-starter-web` or `spring-boot-starter-webflux`. The auto-configuration module compiles against MVC, Servlet, WebFlux, and reactive security APIs as optional/compile-only dependencies and isolates their references by branch.
 
-**Rationale**: Spring Security's resource-server and Jose libraries validate JWTs without choosing a server runtime. Spring Boot's observability starters are not web-stack selectors. Compile-only web APIs allow the shared jar to contain both implementations while leaving the consumer responsible for selecting its single web starter.
+**Rationale**: Spring Security's resource-server and Jose libraries validate JWTs without choosing a server runtime. Spring Boot's dedicated OpenTelemetry starter already brings its Micrometer metrics/tracing integration, OpenTelemetry support, and OTLP exporters, so listing those modules separately duplicates the dependency graph and weakens Boot's auto-configuration ownership. The OTel Logback appender remains separate because Spring Boot explicitly leaves that integration to the application. Compile-only web APIs allow the shared jar to contain both implementations while leaving the consumer responsible for selecting its single web starter.
 
 **Alternatives considered**: Making both web starters transitive would force conflicting application models. Making neither branch available in the auto-configuration jar would require separate published artifacts. Treating the selected web stack as a runtime-only platform dependency was rejected because it would make startup fail for consumers that did not declare it.
 
@@ -92,9 +92,9 @@ This research resolves every technical unknown for the Spring Boot 4.0.7 platfor
 
 ## 10. OTLP Activation and Failure Behavior
 
-**Decision**: Keep tracing and local propagation enabled independently of export. No configured `logistics.parent-service.tracing.otlp.endpoint` means no OTLP exporter. A configured endpoint activates Spring Boot's OpenTelemetry OTLP exporter, with protocol, headers, timeout, and compression supplied through canonical platform properties. Use batch/asynchronous export; exporter errors are diagnostic events and never request failures. Tests cover no endpoint, a recording local HTTP collector, a rejecting/closed collector, and application-provided exporter customization.
+**Decision**: Use `spring-boot-starter-opentelemetry` for tracing and OTLP auto-configuration. Keep tracing and local propagation enabled independently of export: no configured `logistics.parent-service.tracing.otlp.endpoint` means no trace exporter is activated, while a configured endpoint maps to Spring Boot's `management.opentelemetry.tracing.export.otlp.*` model or to the supported OTLP exporter builder customizers. Protocol, headers, timeout, compression, sampling, asynchronous export, and diagnostic-only exporter failure behavior remain part of the platform's canonical property contract. Tests cover no endpoint, a recording local HTTP collector, a rejecting/closed collector, and application-provided exporter customization.
 
-**Rationale**: Spring Boot 4.0.7 provides dedicated OpenTelemetry/OTLP tracing support and builder customizers. This avoids a parallel SDK and meets the requirement that collector absence or outage not break business requests.
+**Rationale**: Spring Boot 4.0.7 provides a dedicated OpenTelemetry starter, the Micrometer bridge, OTLP exporters, and builder customizers. Reusing that auto-configuration avoids a parallel SDK and ensures the platform only adapts its canonical namespace while retaining the requirement that collector absence or outage must not break business requests.
 
 **Alternatives considered**: Always exporting to localhost was rejected because no endpoint must be a valid local-only mode. Synchronous export on the request thread was rejected as a reliability and latency risk. Using the OpenTelemetry Java agent was rejected because this feature is a reusable starter library.
 
@@ -102,11 +102,11 @@ This research resolves every technical unknown for the Spring Boot 4.0.7 platfor
 
 ## 11. Micrometer Metrics
 
-**Decision**: Expose Spring Boot's Micrometer `MeterRegistry` model to applications, include the non-vendor-specific metrics infrastructure, and let consumers add their registry backend. Platform metrics properties control enablement and common tags. Test counters, timers, and gauges with `SimpleMeterRegistry`; do not expose or require the OpenTelemetry Metrics API.
+**Decision**: Expose Spring Boot's Micrometer `MeterRegistry` model to applications through the metrics infrastructure included by `spring-boot-starter-opentelemetry`, and let consumers choose how a registry is used. Platform metrics properties control enablement and common tags. The Boot starter may provide OTLP registry support transitively, but the platform does not configure a metrics endpoint or require it. Test counters, timers, and gauges with `SimpleMeterRegistry`; do not expose or require the OpenTelemetry Metrics API.
 
-**Rationale**: Micrometer is Spring Boot's supported application metrics facade, and Boot creates a composite registry from available implementations. This keeps business code backend-neutral and respects the constitution.
+**Rationale**: Micrometer is Spring Boot's supported application metrics facade, and Boot creates registry infrastructure from available implementations. Keeping metrics usage behind Micrometer keeps business code backend-neutral and respects the constitution; the presence of optional Boot-managed OTLP registry support does not select a collector or backend for a consuming service.
 
-**Alternatives considered**: Direct `MeterProvider` use was rejected by FR-011. Forcing Prometheus or OTLP metrics export was rejected because backend provisioning and selection are service-owned. A custom metrics abstraction was rejected as redundant.
+**Alternatives considered**: Direct `MeterProvider` use was rejected by FR-011. Configuring an OTLP metrics endpoint or forcing Prometheus export was rejected because backend provisioning and selection are service-owned, even though the Boot OpenTelemetry starter may include OTLP registry support transitively. A custom metrics abstraction was rejected as redundant.
 
 **Source**: [Spring Boot Micrometer metrics](https://docs.spring.io/spring-boot/reference/actuator/metrics.html).
 

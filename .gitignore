@@ -3,3 +3,12 @@
 .idea/
 *.iml
 out/
+target/
+*.class
+*.jar
+!gradle/wrapper/gradle-wrapper.jar
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/

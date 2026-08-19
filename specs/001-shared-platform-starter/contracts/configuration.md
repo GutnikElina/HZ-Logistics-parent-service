@@ -55,7 +55,7 @@ logistics:
         - shipment.recipient.phone
 ```
 
-The sample uses only the canonical contract. It does not imply that a collector, identity provider, metrics backend, or application endpoints are provisioned by the platform.
+The sample uses only the canonical contract. It does not imply that a collector, identity provider, metrics backend, or application endpoints are provisioned by the platform. The platform adapts the canonical tracing properties to Spring Boot's OpenTelemetry tracing/export configuration; consumers do not need to configure Boot's `management.opentelemetry.*` namespace directly.
 
 ## Property Contract
 
@@ -75,7 +75,7 @@ The sample uses only the canonical contract. It does not imply that a collector,
 | `logistics.parent-service.tracing.otlp.timeout` | Duration | `10s` | Positive, maximum `60s`. |
 | `logistics.parent-service.tracing.otlp.compression` | Enum | `GZIP` | `NONE` or `GZIP`. |
 | `logistics.parent-service.metrics.enabled` | Boolean | `true` | Controls only the platform metrics contribution. |
-| `logistics.parent-service.metrics.common-tags` | Map | `{}` | Safe, bounded common tags. The consumer chooses a registry backend. |
+| `logistics.parent-service.metrics.common-tags` | Map | `{}` | Safe, bounded common tags. The consumer owns registry/backend selection; the platform does not configure a metrics endpoint. |
 | `logistics.parent-service.errors.enabled` | Boolean | `true` | Controls only platform error handlers. |
 | `logistics.parent-service.errors.detail-policy` | Enum | `GENERIC` | `GENERIC` or `SAFE`; neither permits raw stack/secret data. |
 | `logistics.parent-service.errors.include-instance` | Boolean | `true` | Adds the request path, without query/fragment. |
