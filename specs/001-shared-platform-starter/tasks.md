@@ -298,7 +298,7 @@ Task: T058 independent capability back-off tests
 
 ## Phase 11: Convergence
 
-- [ ] T080 CRITICAL Compile the BOM dependency-resolution suite for JVM 21 instead of JVM 17, preserving the platform bytecode baseline per Constitution Additional Constraints / plan: Java 21 toolchain and bytecode target (contradicts)
-- [ ] T081 Implement and register the selected-stack MVC and WebFlux security auto-configurations so T020's non-web, Servlet, Reactive, and both-classpaths branch-selection checks pass per T020 / FR-004 (missing)
-- [ ] T082 Isolate the MVC adoption fixture from the WebFlux test runtime classpath and assert that MVC startup through the public starter does not require reactive web infrastructure per T021 / US1/AC1 (partial)
-- [ ] T083 Isolate the WebFlux adoption fixture from the MVC and Servlet test runtime classpath and assert that WebFlux startup through the public starter does not require Servlet web infrastructure per T022 / US1/AC2 (partial)
+- [X] T080 CRITICAL Compile the BOM dependency-resolution suite for JVM 21 instead of JVM 17, preserving the platform bytecode baseline per Constitution Additional Constraints / plan: Java 21 toolchain and bytecode target (contradicts)
+- [X] T081 Implement and register the selected-stack MVC and WebFlux security auto-configurations so T020's non-web, Servlet, Reactive, and both-classpaths branch-selection checks pass per T020 / FR-004 (missing)
+- [X] T082 Isolate the MVC adoption fixture from the WebFlux test runtime classpath and assert that MVC startup through the public starter does not require reactive web infrastructure per T021 / US1/AC1 (partial)
+- [X] T083 Isolate the WebFlux adoption fixture from the MVC and Servlet test runtime classpath and assert that WebFlux startup through the public starter does not require Servlet web infrastructure per T022 / US1/AC2 (partial)

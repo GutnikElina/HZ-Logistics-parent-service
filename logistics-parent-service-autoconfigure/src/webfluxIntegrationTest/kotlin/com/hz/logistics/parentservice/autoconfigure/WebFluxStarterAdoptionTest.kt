@@ -8,9 +8,9 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
 import org.springframework.boot.web.server.reactive.context.ReactiveWebServerApplicationContext
 import org.springframework.context.ApplicationContext
-import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.util.ClassUtils
 
 @SpringBootTest(
     classes = [WebFluxAdoptionFixtureApplication::class],
@@ -26,10 +26,18 @@ class WebFluxStarterAdoptionTest {
     private lateinit var platformProperties: PlatformProperties
 
     @Test
-    fun `starts a WebFlux consumer through the public starter without a Servlet platform branch`() {
+    fun `starts a WebFlux consumer through the public starter without MVC or Servlet infrastructure`() {
         assertThat(applicationContext).isInstanceOf(ReactiveWebServerApplicationContext::class.java)
         assertThat(applicationContext.getBeansOfType(SecurityWebFilterChain::class.java)).isNotEmpty
-        assertThat(applicationContext.getBeansOfType(SecurityFilterChain::class.java)).isEmpty()
+        assertThat(
+            ClassUtils.isPresent(
+                "org.springframework.web.servlet.DispatcherServlet",
+                applicationContext.classLoader,
+            ),
+        ).isFalse()
+        assertThat(
+            ClassUtils.isPresent("jakarta.servlet.Servlet", applicationContext.classLoader),
+        ).isFalse()
         assertThat(applicationContext.getBeansOfType(WebFluxAdoptionFixtureController::class.java)).hasSize(1)
         assertThat(platformProperties.metrics.commonTags).containsEntry("environment", "adoption-test")
     }

@@ -1,8 +1,11 @@
 import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.testing.Test
+import org.gradle.jvm.toolchain.JavaLanguageVersion
+import org.gradle.jvm.toolchain.JavaToolchainService
 
 plugins {
     `java-platform`
+    id("java-base")
 }
 
 javaPlatform {
@@ -26,6 +29,13 @@ val bomTestRuntimeClasspath by configurations.creating {
 val bomTestCompilerClasspath by configurations.creating {
     isCanBeResolved = true
     isCanBeConsumed = false
+}
+
+// `java-platform` does not apply the Java plugin, so its standalone Kotlin
+// verification suite must select the platform baseline explicitly.
+val javaToolchains = extensions.getByType<JavaToolchainService>()
+val java21Launcher = javaToolchains.launcherFor {
+    languageVersion.set(JavaLanguageVersion.of(21))
 }
 
 dependencies {
@@ -99,6 +109,7 @@ val compileBomTestKotlin by tasks.registering(JavaExec::class) {
     group = "verification"
     classpath = bomTestCompilerClasspath
     mainClass.set("org.jetbrains.kotlin.cli.jvm.K2JVMCompiler")
+    javaLauncher.set(java21Launcher)
 
     val sourceFiles = fileTree("src/test/kotlin") { include("**/*.kt") }
     inputs.files(sourceFiles)
@@ -112,10 +123,9 @@ val compileBomTestKotlin by tasks.registering(JavaExec::class) {
             "-classpath",
             bomTestCompileClasspath.asPath,
             "-jvm-target",
-            // The java-platform project has no Java toolchain. Keep this
-            // standalone verification fixture runnable on Gradle's JVM; the
-            // published Kotlin implementation remains targeted at Java 21.
-            "17",
+            // The suite verifies the same Java 21 baseline as the published
+            // Kotlin implementation; it must not silently compile as Java 17.
+            "21",
             "-d",
             bomTestClassesDirectory.get().asFile.absolutePath,
             *sourceFiles.files.map { it.absolutePath }.toTypedArray(),
@@ -127,6 +137,7 @@ val bomTest by tasks.registering(Test::class) {
     description = "Runs the BOM dependency-resolution test suite."
     group = "verification"
     dependsOn(compileBomTestKotlin)
+    javaLauncher.set(java21Launcher)
     testClassesDirs = files(bomTestClassesDirectory)
     classpath = files(bomTestClassesDirectory) + bomTestRuntimeClasspath
     binaryResultsDirectory.set(layout.buildDirectory.dir("test-results/bomTest/binary"))
