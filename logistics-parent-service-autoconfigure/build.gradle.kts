@@ -53,7 +53,6 @@ val customTestSourceSets = listOf(
 
 val customTestTasks = customTestSourceSets.map { sourceSetName ->
     val sourceSet = sourceSets.create(sourceSetName) {
-        resources.srcDir("src/$sourceSetName/resources")
         compileClasspath += sourceSets["main"].output
         // Integration and logging suites share the reusable unit fixtures.
         compileClasspath += sourceSets["test"].output
@@ -78,6 +77,19 @@ val customTestTasks = customTestSourceSets.map { sourceSetName ->
         classpath = sourceSet.runtimeClasspath
         useJUnitPlatform()
     }
+}
+
+dependencies {
+    // Each adoption suite consumes the same public starter a service uses and
+    // chooses its own web stack explicitly. The common fast-test classpath
+    // intentionally remains broader so T020 can exercise both APIs together.
+    add("mvcIntegrationTestImplementation", project(":logistics-parent-service-starter"))
+    add("mvcIntegrationTestImplementation", "org.springframework.boot:spring-boot-starter-web")
+    add("webfluxIntegrationTestImplementation", project(":logistics-parent-service-starter"))
+    add("webfluxIntegrationTestImplementation", "org.springframework.boot:spring-boot-starter-webflux")
+
+    testImplementation("org.springframework:spring-webmvc")
+    testRuntimeOnly("jakarta.servlet:jakarta.servlet-api")
 }
 
 // A green module check includes every custom suite; none may silently become

@@ -56,11 +56,11 @@ description: "Actionable implementation tasks for the shared platform starter"
 
 ### Tests for User Story 1
 
-- [ ] T018 [P] [US1] Add a Gradle dependency-resolution test proving `spring-boot-starter-opentelemetry` supplies the Boot-managed Micrometer/OpenTelemetry tracing and OTLP graph at Boot 4.0.7, including Kotlin 2.2.21, Spring Framework 7.0.8, Spring Security 7.0.6, Micrometer 1.16.6, Micrometer Tracing 1.6.6, OpenTelemetry 1.55.0, Logback 1.5.34, and the separately managed `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha`, through `logistics-parent-service-bom/src/test/kotlin/com/hz/logistics/parentservice/bom/BomAlignmentTest.kt`
-- [ ] T019 [P] [US1] Add a starter dependency contract test proving the starter exposes auto-configuration and non-web prerequisites but neither `spring-boot-starter-web` nor `spring-boot-starter-webflux` in `logistics-parent-service-starter/src/test/kotlin/com/hz/logistics/parentservice/starter/StarterDependencyContractTest.kt`
-- [ ] T020 [P] [US1] Add context tests for no-web, explicit Servlet, explicit Reactive, and both-classpaths-selected-branch behavior in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/AutoConfigurationSelectionTest.kt`
-- [ ] T021 [P] [US1] Add the minimal MVC adoption fixture and startup assertions using the public starter, MVC dependencies, and equivalent platform properties in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/MvcStarterAdoptionTest.kt` and `src/mvcIntegrationTest/resources/application-mvc.yml`
-- [ ] T022 [P] [US1] Add the minimal WebFlux adoption fixture and startup assertions using the same public starter, WebFlux dependencies, and equivalent platform properties in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/WebFluxStarterAdoptionTest.kt` and `src/webfluxIntegrationTest/resources/application-webflux.yml`
+- [X] T018 [P] [US1] Add a Gradle dependency-resolution test proving `spring-boot-starter-opentelemetry` supplies the Boot-managed Micrometer/OpenTelemetry tracing and OTLP graph at Boot 4.0.7, including Kotlin 2.2.21, Spring Framework 7.0.8, Spring Security 7.0.6, Micrometer 1.16.6, Micrometer Tracing 1.6.6, OpenTelemetry 1.55.0, Logback 1.5.34, and the separately managed `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha`, through `logistics-parent-service-bom/src/test/kotlin/com/hz/logistics/parentservice/bom/BomAlignmentTest.kt`
+- [X] T019 [P] [US1] Add a starter dependency contract test proving the starter exposes auto-configuration and non-web prerequisites but neither `spring-boot-starter-web` nor `spring-boot-starter-webflux` in `logistics-parent-service-starter/src/test/kotlin/com/hz/logistics/parentservice/starter/StarterDependencyContractTest.kt`
+- [X] T020 [P] [US1] Add context tests for no-web, explicit Servlet, explicit Reactive, and both-classpaths-selected-branch behavior in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/AutoConfigurationSelectionTest.kt`
+- [X] T021 [P] [US1] Add the minimal MVC adoption fixture and startup assertions using the public starter, MVC dependencies, and equivalent platform properties in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/MvcStarterAdoptionTest.kt` and `src/mvcIntegrationTest/resources/application-mvc.yml`
+- [X] T022 [P] [US1] Add the minimal WebFlux adoption fixture and startup assertions using the same public starter, WebFlux dependencies, and equivalent platform properties in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/WebFluxStarterAdoptionTest.kt` and `src/webfluxIntegrationTest/resources/application-webflux.yml`
 
 ### Implementation for User Story 1
 
@@ -293,3 +293,12 @@ Task: T058 independent capability back-off tests
 ## Phase 10: Convergence
 
 - [ ] T079 Require context-managed `RestClient.Builder` and `WebClient.Builder` inputs in the reusable fixture and add coverage preventing raw default builders from bypassing tracing instrumentation per plan: managed outbound clients (partial)
+
+---
+
+## Phase 11: Convergence
+
+- [ ] T080 CRITICAL Compile the BOM dependency-resolution suite for JVM 21 instead of JVM 17, preserving the platform bytecode baseline per Constitution Additional Constraints / plan: Java 21 toolchain and bytecode target (contradicts)
+- [ ] T081 Implement and register the selected-stack MVC and WebFlux security auto-configurations so T020's non-web, Servlet, Reactive, and both-classpaths branch-selection checks pass per T020 / FR-004 (missing)
+- [ ] T082 Isolate the MVC adoption fixture from the WebFlux test runtime classpath and assert that MVC startup through the public starter does not require reactive web infrastructure per T021 / US1/AC1 (partial)
+- [ ] T083 Isolate the WebFlux adoption fixture from the MVC and Servlet test runtime classpath and assert that WebFlux startup through the public starter does not require Servlet web infrastructure per T022 / US1/AC2 (partial)
