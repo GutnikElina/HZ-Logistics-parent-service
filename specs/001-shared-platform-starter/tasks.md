@@ -64,10 +64,10 @@ description: "Actionable implementation tasks for the shared platform starter"
 
 ### Implementation for User Story 1
 
-- [ ] T023 [US1] Complete the BOM's transitive dependency constraints and versionless consumer declarations for the Boot OpenTelemetry starter, approved Logback appender, platform, logging, and test coordinates in `logistics-parent-service-bom/build.gradle.kts`
-- [ ] T024 [US1] Complete the thin starter dependency graph and verify its consumer-facing API configuration contains no implementation source or selected web-stack dependency in `logistics-parent-service-starter/build.gradle.kts`
-- [ ] T025 [US1] Complete the shared non-web auto-configuration registration and condition ordering so non-web capabilities load without either web stack in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/PlatformAutoConfiguration.kt`
-- [ ] T026 [US1] Add the representative MVC and WebFlux fixture controllers, application classes, and test-only dependency declarations needed by the adoption tests in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/` and `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/`
+- [X] T023 [US1] Complete the BOM's transitive dependency constraints and versionless consumer declarations for the Boot OpenTelemetry starter, approved Logback appender, platform, logging, and test coordinates in `logistics-parent-service-bom/build.gradle.kts`
+- [X] T024 [US1] Complete the thin starter dependency graph and verify its consumer-facing API configuration contains no implementation source or selected web-stack dependency in `logistics-parent-service-starter/build.gradle.kts`
+- [X] T025 [US1] Complete the shared non-web auto-configuration registration and condition ordering so non-web capabilities load without either web stack in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/PlatformAutoConfiguration.kt`
+- [X] T026 [US1] Add the representative MVC and WebFlux fixture controllers, application classes, and test-only dependency declarations needed by the adoption tests in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/` and `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/`
 
 **Checkpoint**: A consumer can adopt one BOM and one starter, select MVC or WebFlux itself, and start without the nonselected web infrastructure.
 

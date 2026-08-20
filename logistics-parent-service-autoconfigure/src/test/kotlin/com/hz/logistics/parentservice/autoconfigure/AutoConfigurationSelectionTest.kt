@@ -1,5 +1,7 @@
 package com.hz.logistics.parentservice.autoconfigure
 
+import com.hz.logistics.parentservice.autoconfigure.errors.PlatformProblemDetailFactory
+import com.hz.logistics.parentservice.autoconfigure.observability.PlatformCorrelationContext
 import com.hz.logistics.parentservice.autoconfigure.properties.PlatformProperties
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -19,6 +21,8 @@ class AutoConfigurationSelectionTest {
             .run { context ->
                 assertThat(context).hasNotFailed()
                 assertThat(context).hasSingleBean(PlatformProperties::class.java)
+                assertThat(context).hasSingleBean(PlatformCorrelationContext::class.java)
+                assertThat(context).hasSingleBean(PlatformProblemDetailFactory::class.java)
                 assertThat(isFullMatch(context, MVC_SECURITY_AUTO_CONFIGURATION)).isFalse()
                 assertThat(isFullMatch(context, WEBFLUX_SECURITY_AUTO_CONFIGURATION)).isFalse()
             }

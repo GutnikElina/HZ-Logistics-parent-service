@@ -10,6 +10,7 @@ javaPlatform {
 }
 
 val springBootVersion: String by project
+val kotlinVersion: String by project
 val projectGroup: String by project
 val platformVersion: String by project
 
@@ -31,9 +32,46 @@ dependencies {
     api(platform("org.springframework.boot:spring-boot-dependencies:$springBootVersion"))
 
     constraints {
+        // The imported Boot BOM owns its managed versions. Keeping the
+        // supported coordinates here makes them available to consumers and
+        // lets every platform module declare them without a version.
         api("$projectGroup:logistics-parent-service-autoconfigure:$platformVersion")
         api("$projectGroup:logistics-parent-service-starter:$platformVersion")
 
+        api("org.jetbrains.kotlin:kotlin-stdlib")
+        api("org.jetbrains.kotlin:kotlin-test")
+        api("org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlinVersion")
+
+        api("org.springframework.boot:spring-boot")
+        api("org.springframework.boot:spring-boot-autoconfigure")
+        api("org.springframework.boot:spring-boot-actuator-autoconfigure")
+        api("org.springframework.boot:spring-boot-starter-actuator")
+        api("org.springframework.boot:spring-boot-starter-opentelemetry")
+        api("org.springframework.boot:spring-boot-starter-security")
+        api("org.springframework.boot:spring-boot-starter-test")
+        api("org.springframework.boot:spring-boot-starter-validation")
+        api("org.springframework.boot:spring-boot-starter-web")
+        api("org.springframework.boot:spring-boot-starter-webflux")
+
+        api("org.springframework.security:spring-security-config")
+        api("org.springframework.security:spring-security-core")
+        api("org.springframework.security:spring-security-oauth2-jose")
+        api("org.springframework.security:spring-security-oauth2-resource-server")
+        api("org.springframework.security:spring-security-test")
+        api("org.springframework.security:spring-security-web")
+        api("org.springframework:spring-web")
+        api("org.springframework:spring-webflux")
+        api("org.springframework:spring-webmvc")
+        api("io.projectreactor:reactor-core")
+        api("jakarta.servlet:jakarta.servlet-api")
+        api("ch.qos.logback:logback-classic")
+        api("com.fasterxml.jackson.core:jackson-databind")
+        api("org.junit.jupiter:junit-jupiter-api")
+        api("org.junit.jupiter:junit-jupiter-engine")
+        api("org.junit.platform:junit-platform-launcher")
+
+        // This appender is not managed by Spring Boot and is intentionally
+        // pinned to the approved compatibility-tested alpha release.
         api("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha")
     }
 
@@ -50,7 +88,8 @@ dependencies {
     bomTestCompileClasspath("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0")
     bomTestRuntimeClasspath("org.junit.jupiter:junit-jupiter-engine")
     bomTestRuntimeClasspath("org.junit.platform:junit-platform-launcher")
-    bomTestCompilerClasspath("org.jetbrains.kotlin:kotlin-compiler-embeddable:2.2.21")
+    bomTestCompilerClasspath(enforcedPlatform(project(":logistics-parent-service-bom")))
+    bomTestCompilerClasspath("org.jetbrains.kotlin:kotlin-compiler-embeddable")
 }
 
 val bomTestClassesDirectory = layout.buildDirectory.dir("classes/kotlin/bomTest")
@@ -73,6 +112,9 @@ val compileBomTestKotlin by tasks.registering(JavaExec::class) {
             "-classpath",
             bomTestCompileClasspath.asPath,
             "-jvm-target",
+            // The java-platform project has no Java toolchain. Keep this
+            // standalone verification fixture runnable on Gradle's JVM; the
+            // published Kotlin implementation remains targeted at Java 21.
             "17",
             "-d",
             bomTestClassesDirectory.get().asFile.absolutePath,

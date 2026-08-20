@@ -34,12 +34,15 @@ dependencies {
     compileOnly("ch.qos.logback:logback-classic")
     compileOnly("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0")
 
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-test") {
+        // Keep the Boot-managed JUnit 6 platform aligned; no current suite
+        // uses Mockito's JUnit 5 integration.
+        exclude(group = "org.mockito", module = "mockito-junit-jupiter")
+    }
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.springframework:spring-web")
     testImplementation("org.springframework:spring-webflux")
     testImplementation("com.fasterxml.jackson.core:jackson-databind")
-    testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testRuntimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     kapt("org.springframework.boot:spring-boot-configuration-processor")
@@ -54,19 +57,25 @@ val customTestSourceSets = listOf(
 val customTestTasks = customTestSourceSets.map { sourceSetName ->
     val sourceSet = sourceSets.create(sourceSetName) {
         compileClasspath += sourceSets["main"].output
-        // Integration and logging suites share the reusable unit fixtures.
+        // Suites may share fixture classes, but must not inherit the unit test
+        // runtime: it deliberately contains both web APIs for condition tests.
         compileClasspath += sourceSets["test"].output
-        runtimeClasspath += output + sourceSets["test"].runtimeClasspath
+        runtimeClasspath += sourceSets["test"].output
     }
 
-    configurations.named("${sourceSetName}Implementation") {
-        extendsFrom(configurations.testImplementation.get())
-    }
-    configurations.named("${sourceSetName}CompileOnly") {
-        extendsFrom(configurations.testCompileOnly.get())
-    }
-    configurations.named("${sourceSetName}RuntimeOnly") {
-        extendsFrom(configurations.testRuntimeOnly.get())
+    // Logging tests are stack-neutral and intentionally retain the shared
+    // test dependencies. MVC and WebFlux adoption tests instead declare only
+    // their selected stack below.
+    if (sourceSetName == "loggingTest") {
+        configurations.named("${sourceSetName}Implementation") {
+            extendsFrom(configurations.testImplementation.get())
+        }
+        configurations.named("${sourceSetName}CompileOnly") {
+            extendsFrom(configurations.testCompileOnly.get())
+        }
+        configurations.named("${sourceSetName}RuntimeOnly") {
+            extendsFrom(configurations.testRuntimeOnly.get())
+        }
     }
 
     tasks.register<Test>(sourceSetName) {
@@ -85,8 +94,18 @@ dependencies {
     // intentionally remains broader so T020 can exercise both APIs together.
     add("mvcIntegrationTestImplementation", project(":logistics-parent-service-starter"))
     add("mvcIntegrationTestImplementation", "org.springframework.boot:spring-boot-starter-web")
+    add("mvcIntegrationTestImplementation", "org.springframework.boot:spring-boot-starter-test") {
+        exclude(group = "org.mockito", module = "mockito-junit-jupiter")
+    }
+    add("mvcIntegrationTestImplementation", "org.springframework.security:spring-security-test")
+    add("mvcIntegrationTestRuntimeOnly", "org.junit.platform:junit-platform-launcher")
     add("webfluxIntegrationTestImplementation", project(":logistics-parent-service-starter"))
     add("webfluxIntegrationTestImplementation", "org.springframework.boot:spring-boot-starter-webflux")
+    add("webfluxIntegrationTestImplementation", "org.springframework.boot:spring-boot-starter-test") {
+        exclude(group = "org.mockito", module = "mockito-junit-jupiter")
+    }
+    add("webfluxIntegrationTestImplementation", "org.springframework.security:spring-security-test")
+    add("webfluxIntegrationTestRuntimeOnly", "org.junit.platform:junit-platform-launcher")
 
     testImplementation("org.springframework:spring-webmvc")
     testRuntimeOnly("jakarta.servlet:jakarta.servlet-api")
