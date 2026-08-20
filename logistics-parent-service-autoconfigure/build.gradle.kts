@@ -15,6 +15,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot")
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
+    implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
     implementation("org.springframework.security:spring-security-core")
     implementation("org.springframework.security:spring-security-oauth2-jose")
@@ -35,6 +36,7 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
+    testImplementation("com.fasterxml.jackson.core:jackson-databind")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testRuntimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
