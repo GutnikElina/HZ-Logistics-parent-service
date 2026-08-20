@@ -52,3 +52,14 @@ subprojects {
 // The root project is an aggregator only. It has no published component or
 // implementation dependencies; the three included projects are the platform.
 description = "HZ Logistics shared platform build aggregator"
+
+// Keep the root release gate explicit: the aggregator must execute the BOM,
+// fast auto-configuration tests, both web-stack suites, and logging tests.
+tasks.named("check") {
+    dependsOn(subprojects.map { it.tasks.named("check") })
+    dependsOn(
+        ":logistics-parent-service-autoconfigure:mvcIntegrationTest",
+        ":logistics-parent-service-autoconfigure:webfluxIntegrationTest",
+        ":logistics-parent-service-autoconfigure:loggingTest",
+    )
+}

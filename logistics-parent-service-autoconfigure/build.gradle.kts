@@ -36,6 +36,8 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
+    testImplementation("org.springframework:spring-web")
+    testImplementation("org.springframework:spring-webflux")
     testImplementation("com.fasterxml.jackson.core:jackson-databind")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit5")
     testRuntimeOnly("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0")
@@ -49,15 +51,20 @@ val customTestSourceSets = listOf(
     "loggingTest",
 )
 
-customTestSourceSets.forEach { sourceSetName ->
+val customTestTasks = customTestSourceSets.map { sourceSetName ->
     val sourceSet = sourceSets.create(sourceSetName) {
         resources.srcDir("src/$sourceSetName/resources")
         compileClasspath += sourceSets["main"].output
-        runtimeClasspath += output + compileClasspath
+        // Integration and logging suites share the reusable unit fixtures.
+        compileClasspath += sourceSets["test"].output
+        runtimeClasspath += output + sourceSets["test"].runtimeClasspath
     }
 
     configurations.named("${sourceSetName}Implementation") {
         extendsFrom(configurations.testImplementation.get())
+    }
+    configurations.named("${sourceSetName}CompileOnly") {
+        extendsFrom(configurations.testCompileOnly.get())
     }
     configurations.named("${sourceSetName}RuntimeOnly") {
         extendsFrom(configurations.testRuntimeOnly.get())
@@ -66,8 +73,15 @@ customTestSourceSets.forEach { sourceSetName ->
     tasks.register<Test>(sourceSetName) {
         description = "Runs the $sourceSetName test suite."
         group = "verification"
+        dependsOn(sourceSet.classesTaskName)
         testClassesDirs = sourceSet.output.classesDirs
         classpath = sourceSet.runtimeClasspath
         useJUnitPlatform()
     }
+}
+
+// A green module check includes every custom suite; none may silently become
+// an orphaned source set as the platform grows.
+tasks.named("check") {
+    dependsOn(customTestTasks)
 }
