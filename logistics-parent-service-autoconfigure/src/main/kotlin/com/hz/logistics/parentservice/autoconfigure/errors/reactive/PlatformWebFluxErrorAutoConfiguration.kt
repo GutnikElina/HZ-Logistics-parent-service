@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
 import org.springframework.core.io.buffer.DataBuffer
@@ -43,13 +44,24 @@ class PlatformWebFluxErrorAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(annotation = [RestControllerAdvice::class])
-    fun platformWebFluxProblemHandler(factory: PlatformProblemDetailFactory): PlatformWebFluxProblemHandler =
-        PlatformWebFluxProblemHandler(factory)
-
-    @Bean
-    @ConditionalOnMissingBean(annotation = [RestControllerAdvice::class])
     fun platformWebFluxMethodSecurityProblemAdvice(factory: PlatformProblemDetailFactory):
         PlatformWebFluxMethodSecurityProblemAdvice = PlatformWebFluxMethodSecurityProblemAdvice(factory)
+
+    /**
+     * `spring-boot-webflux` is intentionally compile-only. Isolating the
+     * ErrorWebExceptionHandler return type prevents a reactive application
+     * that only supplies Spring WebFlux APIs from linking an unavailable Boot
+     * infrastructure class while conditions are evaluated.
+     */
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnClass(name = ["org.springframework.boot.webflux.error.ErrorWebExceptionHandler"])
+    class ErrorHandlerConfiguration {
+
+        @Bean
+        @ConditionalOnMissingBean(annotation = [RestControllerAdvice::class])
+        fun platformWebFluxProblemHandler(factory: PlatformProblemDetailFactory): PlatformWebFluxProblemHandler =
+            PlatformWebFluxProblemHandler(factory)
+    }
 }
 
 /**
