@@ -97,6 +97,9 @@ dependencies {
     // intentionally remains broader so T020 can exercise both APIs together.
     add("mvcIntegrationTestImplementation", project(":logistics-parent-service-starter"))
     add("mvcIntegrationTestImplementation", "org.springframework.boot:spring-boot-starter-web")
+    // Boot 4 keeps the managed RestClient.Builder auto-configuration in its
+    // dedicated module; the MVC tracing contract verifies that managed client.
+    add("mvcIntegrationTestImplementation", "org.springframework.boot:spring-boot-restclient")
     add("mvcIntegrationTestImplementation", "org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.mockito", module = "mockito-junit-jupiter")
     }
@@ -105,6 +108,9 @@ dependencies {
     add("mvcIntegrationTestRuntimeOnly", "org.junit.platform:junit-platform-launcher")
     add("webfluxIntegrationTestImplementation", project(":logistics-parent-service-starter"))
     add("webfluxIntegrationTestImplementation", "org.springframework.boot:spring-boot-starter-webflux")
+    // Boot 4 exposes the managed WebClient.Builder from this dedicated module;
+    // the reactive tracing suite must exercise the managed client path.
+    add("webfluxIntegrationTestImplementation", "org.springframework.boot:spring-boot-webclient")
     add("webfluxIntegrationTestImplementation", "org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.mockito", module = "mockito-junit-jupiter")
     }

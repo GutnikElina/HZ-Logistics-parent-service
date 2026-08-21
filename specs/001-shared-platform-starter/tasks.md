@@ -111,11 +111,11 @@ description: "Actionable implementation tasks for the shared platform starter"
 
 ### Tests for User Story 3
 
-- [ ] T041 [P] [US3] Add W3C propagation unit/context tests for valid continuation, invalid/missing header replacement, valid `tracestate`, sampling bounds, and trace/span correlation in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/W3cPropagationTest.kt`
-- [ ] T042 [P] [US3] Add OTLP configuration tests for no endpoint/no exporter, HTTP and gRPC settings, headers/timeout/compression validation, sampling `1.0`, asynchronous export, and application observability back-off in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/OtlpConfigurationTest.kt`
-- [ ] T043 [P] [US3] Add MVC trace integration tests for inbound continuation, managed RestClient `traceparent` injection, no/invalid context, problem/log correlation, recording collector export, and rejecting collector resilience in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/MvcTracingIntegrationTest.kt`
-- [ ] T044 [P] [US3] Add WebFlux trace integration tests for inbound continuation, managed WebClient injection, missing/invalid context, Reactor scheduler preservation, problem/log correlation, collector export, and exporter resilience in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/WebFluxTracingIntegrationTest.kt`
-- [ ] T045 [P] [US3] Add context tests proving tracing can be disabled or independently overridden while security, metrics, errors, and logging remain eligible in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/TracingBackOffTest.kt`
+- [X] T041 [P] [US3] Add W3C propagation unit/context tests for valid continuation, invalid/missing header replacement, valid `tracestate`, sampling bounds, and trace/span correlation in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/W3cPropagationTest.kt`
+- [X] T042 [P] [US3] Add OTLP configuration tests for no endpoint/no exporter, HTTP and gRPC settings, headers/timeout/compression validation, sampling `1.0`, asynchronous export, and application observability back-off in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/OtlpConfigurationTest.kt`
+- [X] T043 [P] [US3] Add MVC trace integration tests for inbound continuation, managed RestClient `traceparent` injection, no/invalid context, problem/log correlation, recording collector export, and rejecting collector resilience in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/MvcTracingIntegrationTest.kt`
+- [X] T044 [P] [US3] Add WebFlux trace integration tests for inbound continuation, managed WebClient injection, missing/invalid context, Reactor scheduler preservation, problem/log correlation, collector export, and exporter resilience in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/WebFluxTracingIntegrationTest.kt`
+- [X] T045 [P] [US3] Add context tests proving tracing can be disabled or independently overridden while security, metrics, errors, and logging remain eligible in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/TracingBackOffTest.kt`
 
 ### Implementation for User Story 3
 
@@ -309,3 +309,11 @@ Task: T058 independent capability back-off tests
 - [ ] T085 Verify MVC and WebFlux application-provided authority converters are actually reused while default denial remains active in `SecurityAutoConfigurationContextTest` per T029 / FR-004 / FR-017 (partial)
 - [ ] T086 Exercise the MVC resource-server bearer flow through a controlled `JwtDecoder`, covering valid, invalid, expired, issuer-mismatched, and nested-role tokens with default and custom prefixes in `MvcSecurityIntegrationTest` per T030 / US2/AC2 / US2/AC4 (partial)
 - [ ] T087 Exercise the WebFlux resource-server bearer flow through a controlled `ReactiveJwtDecoder`, covering valid, invalid, expired, issuer-mismatched, and nested-role tokens with default and custom prefixes in `WebFluxSecurityIntegrationTest` per T031 / US2/AC2 / US2/AC4 (partial)
+
+## Phase 13: Convergence
+
+- [ ] T088 Add MVC and WebFlux structured-log capture assertions that verify the same inbound trace ID appears in the safe ProblemDetail and emitted JSON event per T043 / T044 / FR-009 / FR-012 / SC-003 (partial)
+- [ ] T089 Make the MVC and WebFlux rejecting-collector scenarios call the successful outbound endpoint and assert a 200 response plus a valid propagated header when OTLP export fails per T043 / T044 / FR-010 (partial)
+- [ ] T090 Add separate no-`traceparent` assertions that prove MVC and WebFlux start and propagate a fresh valid trace, including the Reactor scheduler boundary, per T043 / T044 / FR-009 / US3/AC4 (partial)
+- [ ] T091 Add enabled-tracing positive controls, then prove tracing disablement and an application-owned `OpenTelemetry` instance alone back off platform tracing while other capability beans remain eligible per T045 / FR-017 (partial)
+- [ ] T092 Turn OTLP configuration coverage into exporter-behavior tests proving canonical HTTP/gRPC endpoint, protocol, headers, timeout, compression, sampling, absent-exporter, and non-blocking delayed-collector semantics per T042 / FR-010 (partial)
