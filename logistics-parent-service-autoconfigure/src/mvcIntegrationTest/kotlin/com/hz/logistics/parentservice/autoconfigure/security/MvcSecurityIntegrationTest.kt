@@ -64,18 +64,67 @@ class MvcSecurityIntegrationTest(
     fun `accepts a mock jwt and applies nested role authorities`() {
         mockMvc.perform(
             get("/protected")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer trusted"),
+                .header(HttpHeaders.AUTHORIZATION, "Bearer valid"),
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.authorities[0]").value("ROLE_dispatcher"))
+            .andExpect(jsonPath("$.authorities[1]").value("ROLE_planner"))
     }
 
     @Test
-    fun `rejects an invalid bearer token through the common problem contract`() {
-        mockMvc.perform(get("/protected").header(HttpHeaders.AUTHORIZATION, "Bearer malformed"))
+    fun `accepts a nested string role with the default prefix`() {
+        mockMvc.perform(get("/protected").header(HttpHeaders.AUTHORIZATION, "Bearer nested-string"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.authorities[0]").value("ROLE_driver"))
+    }
+
+    @Test
+    fun `rejects an invalid signature through the common problem contract`() {
+        mockMvc.perform(get("/protected").header(HttpHeaders.AUTHORIZATION, "Bearer invalid-signature"))
             .andExpect(status().isUnauthorized)
             .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
             .andExpect(jsonPath("$.status").value(401))
+    }
+
+    @Test
+    fun `rejects an expired token through the common problem contract`() {
+        mockMvc.perform(get("/protected").header(HttpHeaders.AUTHORIZATION, "Bearer expired"))
+            .andExpect(status().isUnauthorized)
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.status").value(401))
+    }
+
+    @Test
+    fun `rejects an issuer mismatched token through the common problem contract`() {
+        mockMvc.perform(get("/protected").header(HttpHeaders.AUTHORIZATION, "Bearer issuer-mismatch"))
+            .andExpect(status().isUnauthorized)
+            .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+            .andExpect(jsonPath("$.status").value(401))
+    }
+}
+
+@SpringBootTest(
+    classes = [MvcSecurityFixtureApplication::class],
+    webEnvironment = WebEnvironment.MOCK,
+    properties = [
+        "logistics.parent-service.security.issuer=https://identity.example.test/realms/logistics",
+        "logistics.parent-service.security.role-claims-path=realm_access.roles",
+        "logistics.parent-service.security.role-prefix=APP_",
+    ],
+)
+@AutoConfigureMockMvc
+class MvcSecurityCustomPrefixIntegrationTest(
+) {
+
+    @Autowired
+    private lateinit var mockMvc: MockMvc
+
+    @Test
+    fun `applies a custom role prefix in the active MVC bearer flow`() {
+        mockMvc.perform(get("/protected").header(HttpHeaders.AUTHORIZATION, "Bearer valid"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.authorities[0]").value("APP_dispatcher"))
+            .andExpect(jsonPath("$.authorities[1]").value("APP_planner"))
     }
 }
 
@@ -131,10 +180,19 @@ class MvcSecurityFixtureApplication {
 
     @Bean
     fun jwtDecoder(): JwtDecoder = JwtDecoder { token ->
-        if (token == "trusted") {
-            mockJwt(claims = mapOf("realm_access" to mapOf("roles" to listOf("dispatcher"))))
-        } else {
-            throw BadJwtException("invalid test token")
+        when (token) {
+            "trusted", "valid" -> mockJwt(
+                tokenValue = token,
+                claims = mapOf("realm_access" to mapOf("roles" to listOf("dispatcher", "planner"))),
+            )
+            "nested-string" -> mockJwt(
+                tokenValue = token,
+                claims = mapOf("realm_access" to mapOf("roles" to "driver")),
+            )
+            "invalid-signature" -> throw BadJwtException("invalid signature")
+            "expired" -> throw BadJwtException("token expired")
+            "issuer-mismatch" -> throw BadJwtException("issuer mismatch")
+            else -> throw BadJwtException("unknown test token")
         }
     }
 }

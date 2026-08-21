@@ -305,10 +305,10 @@ Task: T058 independent capability back-off tests
 
 ## Phase 12: Convergence
 
-- [ ] T084 Add active-security startup-failure coverage for every prohibited public-endpoint grammar category in `PublicEndpointPatternTest` per T027 / FR-005 (partial)
-- [ ] T085 Verify MVC and WebFlux application-provided authority converters are actually reused while default denial remains active in `SecurityAutoConfigurationContextTest` per T029 / FR-004 / FR-017 (partial)
-- [ ] T086 Exercise the MVC resource-server bearer flow through a controlled `JwtDecoder`, covering valid, invalid, expired, issuer-mismatched, and nested-role tokens with default and custom prefixes in `MvcSecurityIntegrationTest` per T030 / US2/AC2 / US2/AC4 (partial)
-- [ ] T087 Exercise the WebFlux resource-server bearer flow through a controlled `ReactiveJwtDecoder`, covering valid, invalid, expired, issuer-mismatched, and nested-role tokens with default and custom prefixes in `WebFluxSecurityIntegrationTest` per T031 / US2/AC2 / US2/AC4 (partial)
+- [X] T084 Add active-security startup-failure coverage for every prohibited public-endpoint grammar category in `PublicEndpointPatternTest` per T027 / FR-005 (partial)
+- [X] T085 Verify MVC and WebFlux application-provided authority converters are actually reused while default denial remains active in `SecurityAutoConfigurationContextTest` per T029 / FR-004 / FR-017 (partial)
+- [X] T086 Exercise the MVC resource-server bearer flow through a controlled `JwtDecoder`, covering valid, invalid, expired, issuer-mismatched, and nested-role tokens with default and custom prefixes in `MvcSecurityIntegrationTest` per T030 / US2/AC2 / US2/AC4 (partial)
+- [X] T087 Exercise the WebFlux resource-server bearer flow through a controlled `ReactiveJwtDecoder`, covering valid, invalid, expired, issuer-mismatched, and nested-role tokens with default and custom prefixes in `WebFluxSecurityIntegrationTest` per T031 / US2/AC2 / US2/AC4 (partial)
 
 ## Phase 13: Convergence
 

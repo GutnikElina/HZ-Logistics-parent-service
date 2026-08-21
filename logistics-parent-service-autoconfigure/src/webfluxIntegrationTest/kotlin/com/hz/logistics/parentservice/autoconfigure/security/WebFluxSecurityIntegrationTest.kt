@@ -64,22 +64,86 @@ class WebFluxSecurityIntegrationTest(
     @Test
     fun `accepts a mock jwt and applies nested role authorities`() {
         webTestClient.get().uri("/protected")
-            .header(HttpHeaders.AUTHORIZATION, "Bearer trusted")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer valid")
             .exchange()
             .expectStatus().isOk
             .expectBody()
             .jsonPath("$.authorities[0]").isEqualTo("ROLE_dispatcher")
+            .jsonPath("$.authorities[1]").isEqualTo("ROLE_planner")
     }
 
     @Test
-    fun `rejects an invalid bearer token through the common problem contract`() {
+    fun `accepts a nested string role with the default prefix`() {
         webTestClient.get().uri("/protected")
-            .header(HttpHeaders.AUTHORIZATION, "Bearer malformed")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer nested-string")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.authorities[0]").isEqualTo("ROLE_driver")
+    }
+
+    @Test
+    fun `rejects an invalid signature through the common problem contract`() {
+        webTestClient.get().uri("/protected")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer invalid-signature")
             .exchange()
             .expectStatus().isUnauthorized
             .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
             .expectBody()
             .jsonPath("$.status").isEqualTo(401)
+    }
+
+    @Test
+    fun `rejects an expired token through the common problem contract`() {
+        webTestClient.get().uri("/protected")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer expired")
+            .exchange()
+            .expectStatus().isUnauthorized
+            .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
+            .expectBody()
+            .jsonPath("$.status").isEqualTo(401)
+    }
+
+    @Test
+    fun `rejects an issuer mismatched token through the common problem contract`() {
+        webTestClient.get().uri("/protected")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer issuer-mismatch")
+            .exchange()
+            .expectStatus().isUnauthorized
+            .expectHeader().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON)
+            .expectBody()
+            .jsonPath("$.status").isEqualTo(401)
+    }
+}
+
+@SpringBootTest(
+    classes = [WebFluxSecurityFixtureApplication::class],
+    webEnvironment = WebEnvironment.RANDOM_PORT,
+    properties = [
+        "logistics.parent-service.security.issuer=https://identity.example.test/realms/logistics",
+        "logistics.parent-service.security.role-claims-path=realm_access.roles",
+        "logistics.parent-service.security.role-prefix=APP_",
+    ],
+)
+class WebFluxSecurityCustomPrefixIntegrationTest(
+) {
+
+    @LocalServerPort
+    private var port: Int = 0
+
+    private val webTestClient: WebTestClient by lazy {
+        WebTestClient.bindToServer().baseUrl("http://localhost:$port").build()
+    }
+
+    @Test
+    fun `applies a custom role prefix in the active WebFlux bearer flow`() {
+        webTestClient.get().uri("/protected")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer valid")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody()
+            .jsonPath("$.authorities[0]").isEqualTo("APP_dispatcher")
+            .jsonPath("$.authorities[1]").isEqualTo("APP_planner")
     }
 }
 
@@ -142,10 +206,23 @@ class WebFluxSecurityFixtureApplication {
     @Bean
     fun reactiveJwtDecoder(): ReactiveJwtDecoder =
         ReactiveJwtDecoder { token ->
-            if (token == "trusted") {
-                Mono.just(mockJwt(claims = mapOf("realm_access" to mapOf("roles" to listOf("dispatcher")))))
-            } else {
-                Mono.error(BadJwtException("invalid test token"))
+            when (token) {
+                "trusted", "valid" -> Mono.just(
+                    mockJwt(
+                        tokenValue = token,
+                        claims = mapOf("realm_access" to mapOf("roles" to listOf("dispatcher", "planner"))),
+                    ),
+                )
+                "nested-string" -> Mono.just(
+                    mockJwt(
+                        tokenValue = token,
+                        claims = mapOf("realm_access" to mapOf("roles" to "driver")),
+                    ),
+                )
+                "invalid-signature" -> Mono.error(BadJwtException("invalid signature"))
+                "expired" -> Mono.error(BadJwtException("token expired"))
+                "issuer-mismatch" -> Mono.error(BadJwtException("issuer mismatch"))
+                else -> Mono.error(BadJwtException("unknown test token"))
             }
         }
 }

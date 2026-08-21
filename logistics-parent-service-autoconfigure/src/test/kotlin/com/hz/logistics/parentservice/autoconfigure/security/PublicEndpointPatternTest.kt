@@ -1,12 +1,42 @@
 package com.hz.logistics.parentservice.autoconfigure.security
 
+import com.hz.logistics.parentservice.autoconfigure.PlatformAutoConfiguration
+import com.hz.logistics.parentservice.autoconfigure.security.mvc.PlatformMvcSecurityAutoConfiguration
+import com.hz.logistics.parentservice.autoconfigure.security.reactive.PlatformWebFluxSecurityAutoConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatIllegalArgumentException
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.params.ParameterizedTest
 import org.junit.jupiter.params.provider.ValueSource
+import org.springframework.boot.autoconfigure.AutoConfigurations
+import org.springframework.boot.test.context.runner.ReactiveWebApplicationContextRunner
+import org.springframework.boot.test.context.runner.WebApplicationContextRunner
 
 class PublicEndpointPatternTest {
+
+    private lateinit var mvcRunner: WebApplicationContextRunner
+    private lateinit var webFluxRunner: ReactiveWebApplicationContextRunner
+
+    @BeforeEach
+    fun setUp() {
+        mvcRunner = WebApplicationContextRunner()
+            .withConfiguration(
+                AutoConfigurations.of(
+                    PlatformAutoConfiguration::class.java,
+                    PlatformMvcSecurityAutoConfiguration::class.java,
+                ),
+            )
+            .withPropertyValues(VALID_ISSUER)
+        webFluxRunner = ReactiveWebApplicationContextRunner()
+            .withConfiguration(
+                AutoConfigurations.of(
+                    PlatformAutoConfiguration::class.java,
+                    PlatformWebFluxSecurityAutoConfiguration::class.java,
+                ),
+            )
+            .withPropertyValues(VALID_ISSUER)
+    }
 
     @Test
     fun `matches exact literals question marks and segment stars`() {
@@ -83,5 +113,58 @@ class PublicEndpointPatternTest {
     fun `rejects patterns outside the public grammar`(pattern: String) {
         assertThatIllegalArgumentException()
             .isThrownBy { PublicEndpointPattern.compileAll(listOf(pattern)) }
+    }
+
+    @ParameterizedTest(name = "fails active MVC security startup for [{0}]")
+    @ValueSource(
+        strings = [
+            "status",
+            "",
+            "/",
+            "//status",
+            "/status//health",
+            "/status/./health",
+            "/status/../health",
+            "/status/%2Fhealth",
+            "/status\\health",
+            "/orders/{id}",
+            "/orders/{id:[0-9]+}",
+            "/public/**/health",
+            "/public/**suffix",
+        ],
+    )
+    fun `fails active MVC security startup for every prohibited grammar category`(pattern: String) {
+        mvcRunner
+            .withPropertyValues("logistics.parent-service.security.public-endpoints[0]=$pattern")
+            .run { context -> assertThat(context).hasFailed() }
+    }
+
+    @ParameterizedTest(name = "fails active WebFlux security startup for [{0}]")
+    @ValueSource(
+        strings = [
+            "status",
+            "",
+            "/",
+            "//status",
+            "/status//health",
+            "/status/./health",
+            "/status/../health",
+            "/status/%2Fhealth",
+            "/status\\health",
+            "/orders/{id}",
+            "/orders/{id:[0-9]+}",
+            "/public/**/health",
+            "/public/**suffix",
+        ],
+    )
+    fun `fails active WebFlux security startup for every prohibited grammar category`(pattern: String) {
+        webFluxRunner
+            .withPropertyValues("logistics.parent-service.security.public-endpoints[0]=$pattern")
+            .run { context -> assertThat(context).hasFailed() }
+    }
+
+    private companion object {
+        const val VALID_ISSUER =
+            "logistics.parent-service.security.issuer=https://identity.example.test/realms/logistics"
     }
 }

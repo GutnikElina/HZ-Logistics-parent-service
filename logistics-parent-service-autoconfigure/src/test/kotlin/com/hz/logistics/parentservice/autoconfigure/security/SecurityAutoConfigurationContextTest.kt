@@ -14,17 +14,32 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.convert.converter.Converter
 import org.springframework.security.authentication.AbstractAuthenticationToken
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.jwt.JwtException
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter
+import org.springframework.security.core.Authentication
+import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.FilterChainProxy
+import org.springframework.security.web.server.WebFilterChainProxy
 import org.springframework.security.web.server.SecurityWebFilterChain
+import org.springframework.test.web.reactive.server.WebTestClient
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import org.springframework.test.web.servlet.setup.StandaloneMockMvcBuilder
+import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ServerWebExchange
 import org.springframework.web.server.WebFilter
 import reactor.core.publisher.Flux
 import reactor.core.publisher.Mono
+import jakarta.servlet.Filter
 import java.lang.reflect.Proxy
 
 class SecurityAutoConfigurationContextTest {
@@ -94,14 +109,43 @@ class SecurityAutoConfigurationContextTest {
                 assertThat(context).hasSingleBean(JwtDecoder::class.java)
                 assertThat(context).hasSingleBean(Converter::class.java)
                 assertThat(context).hasSingleBean(SecurityFilterChain::class.java)
+
+                val mockMvcBuilder: StandaloneMockMvcBuilder =
+                    MockMvcBuilders.standaloneSetup(MvcSecurityContextController())
+                mockMvcBuilder.addFilters<StandaloneMockMvcBuilder>(context.getBean(FilterChainProxy::class.java))
+                val mockMvc = mockMvcBuilder.build()
+
+                mockMvc.perform(get("/context-protected"))
+                    .andExpect(status().isUnauthorized)
+                mockMvc.perform(
+                    get("/context-protected")
+                        .header("Authorization", "Bearer application-token"),
+                )
+                    .andExpect(status().isOk)
+                    .andExpect(jsonPath("$.authorities[0]").value("APPLICATION_MVC"))
             }
 
         webFluxRunner()
-            .withUserConfiguration(WebFluxDecoderConfiguration::class.java)
+            .withUserConfiguration(WebFluxDecoderAndConverterConfiguration::class.java)
             .run { context ->
                 assertThat(context).hasNotFailed()
                 assertThat(context).hasSingleBean(ReactiveJwtDecoder::class.java)
+                assertThat(context).hasSingleBean(Converter::class.java)
                 assertThat(context).hasSingleBean(SecurityWebFilterChain::class.java)
+
+                val webTestClientSpec: WebTestClient.ControllerSpec =
+                    WebTestClient.bindToController(WebFluxSecurityContextController())
+                webTestClientSpec.webFilter<WebTestClient.ControllerSpec>(context.getBean(WebFilterChainProxy::class.java))
+                val webTestClient = webTestClientSpec.build()
+
+                webTestClient.get().uri("/context-protected").exchange()
+                    .expectStatus().isUnauthorized
+                webTestClient.get().uri("/context-protected")
+                    .header("Authorization", "Bearer application-token")
+                    .exchange()
+                    .expectStatus().isOk
+                    .expectBody()
+                    .jsonPath("$.authorities[0]").isEqualTo("APPLICATION_WEBFLUX")
             }
     }
 
@@ -157,7 +201,7 @@ class SecurityAutoConfigurationContextTest {
             ) { _, method, _ ->
                 when (method.name) {
                     "matches" -> false
-                    "getFilters" -> emptyList<Any>()
+                    "getFilters" -> emptyList<Filter>()
                     else -> null
                 }
             } as SecurityFilterChain
@@ -178,19 +222,59 @@ class SecurityAutoConfigurationContextTest {
     class MvcDecoderAndConverterConfiguration {
 
         @Bean
-        fun applicationJwtDecoder(): JwtDecoder = JwtDecoder { throw JwtException("decoder is only a context fixture") }
+        fun applicationJwtDecoder(): JwtDecoder = JwtDecoder {
+            com.hz.logistics.parentservice.autoconfigure.support.PlatformTestFixtures.mockJwt(tokenValue = it)
+        }
 
         @Bean
         fun applicationJwtAuthenticationConverter(): Converter<Jwt, AbstractAuthenticationToken> =
-            JwtAuthenticationConverter()
+            Converter { jwt ->
+                org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken(
+                    jwt,
+                    listOf(SimpleGrantedAuthority("APPLICATION_MVC")),
+                )
+            }
     }
 
     @Configuration(proxyBeanMethods = false)
-    class WebFluxDecoderConfiguration {
+    class WebFluxDecoderAndConverterConfiguration {
 
         @Bean
         fun applicationReactiveJwtDecoder(): ReactiveJwtDecoder =
-            ReactiveJwtDecoder { Mono.error(JwtException("decoder is only a context fixture")) }
+            ReactiveJwtDecoder {
+                Mono.just(
+                    com.hz.logistics.parentservice.autoconfigure.support.PlatformTestFixtures.mockJwt(
+                        tokenValue = it,
+                    ),
+                )
+            }
+
+        @Bean
+        fun applicationReactiveJwtAuthenticationConverter(): Converter<Jwt, Mono<AbstractAuthenticationToken>> =
+            Converter { jwt ->
+                Mono.just(
+                    org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken(
+                        jwt,
+                        listOf(SimpleGrantedAuthority("APPLICATION_WEBFLUX")),
+                    ),
+                )
+            }
+    }
+
+    @RestController
+    private class MvcSecurityContextController {
+
+        @GetMapping("/context-protected")
+        fun protectedEndpoint(authentication: Authentication?): Map<String, List<String>> =
+            mapOf("authorities" to authentication?.authorities?.mapNotNull { it.authority }.orEmpty())
+    }
+
+    @RestController
+    private class WebFluxSecurityContextController {
+
+        @GetMapping("/context-protected")
+        fun protectedEndpoint(authentication: Authentication?): Mono<Map<String, List<String>>> =
+            Mono.just(mapOf("authorities" to authentication?.authorities?.mapNotNull { it.authority }.orEmpty()))
     }
 
     private companion object {
