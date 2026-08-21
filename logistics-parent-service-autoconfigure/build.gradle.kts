@@ -32,6 +32,9 @@ dependencies {
     compileOnly("jakarta.servlet:jakarta.servlet-api")
     compileOnly("org.springframework:spring-webmvc")
     compileOnly("org.springframework:spring-webflux")
+    // Needed only to type the reactive ErrorWebExceptionHandler SPI. Consumers
+    // still choose WebFlux themselves; this adds no transitive web stack.
+    compileOnly("org.springframework.boot:spring-boot-webflux")
     compileOnly("org.springframework.security:spring-security-config")
     compileOnly("org.springframework.security:spring-security-web")
     compileOnly("org.springframework.security:spring-security-oauth2-resource-server")
