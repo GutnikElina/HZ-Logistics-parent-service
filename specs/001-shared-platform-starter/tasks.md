@@ -337,3 +337,13 @@ Task: T058 independent capability back-off tests
 - [X] T101 Wire the implemented MVC ProblemDetail auto-configuration and complete validation, content-negotiation, unhandled-failure, and committed-response handling so T054 returns the common safe contract per T061 / FR-012 / FR-013 / Constitution V (partial)
 - [X] T102 Wire the implemented WebFlux ProblemDetail auto-configuration, preserve non-blocking serialization, and back off for an application-owned reactive error handler so T055 remains equivalent and independent per T062 / FR-012 / FR-017 / Constitution III (partial)
 - [X] T103 Expose the implemented default `PlatformLogSanitizer` through logging auto-configuration and connect it to the pre-sink pipeline while preserving immutable baseline redaction and application overrides per T063 / FR-015 / Constitution IV (partial)
+
+## Phase 17: Convergence
+
+- [X] T104 Wire `PlatformCorrelationContext` through MVC, WebFlux, Reactor, and the pre-sink logging boundary so a pre-trace failure has one fallback `traceId` in both ProblemDetail and diagnostics, clears it at each execution boundary, and preserves independent application-error-handler back-off per T077 / T093 / FR-010 / FR-012 / FR-014 / SC-003
+- [X] T105 Harden SAFE ProblemDetail detail sanitization with an immutable baseline that removes simple and qualified exception names, inline stack content, credentials, JWTs, secrets, and unnecessary personal data before serialization, with MVC/WebFlux corpus coverage per T078 / T096 / FR-013 / SC-004 / US4/AC2
+- [X] T106 Extend the rejecting-collector WebFlux tracing scenario to call the successful managed outbound endpoint and assert HTTP 200 plus a valid propagated `traceparent` per T089 / T044 / FR-010
+- [X] T107 Split MVC missing and malformed `traceparent` coverage, independently proving that an absent header starts and propagates a fresh valid W3C trace per T090 / T043 / FR-009 / US3/AC4
+- [X] T108 Add OTLP exporter-behavior coverage for canonical HTTP/gRPC endpoints, protocol, headers, timeout, compression, sampling, absent exporter, and delayed/rejecting non-blocking export per T092 / T042 / FR-010
+- [X] T109 Align MVC and WebFlux ProblemDetail mappings for unsupported media negotiation and method-security authentication failures, with paired contract tests for status, fields, media type, and trace correlation per T096 / FR-012 / FR-013 / SC-004
+- [X] T110 Extend selected-stack error ownership detection and tests to compatible application `@ControllerAdvice` as well as reactive handlers, preserving unrelated metrics and logging capabilities per T099 / FR-017 / Constitution III / Constitution V

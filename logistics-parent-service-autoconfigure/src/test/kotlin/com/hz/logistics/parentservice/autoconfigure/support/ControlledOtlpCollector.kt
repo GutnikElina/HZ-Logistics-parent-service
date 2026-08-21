@@ -21,6 +21,7 @@ class ControlledOtlpCollector(
     responseStatus: Int = 200,
     private val responseBody: ByteArray = ByteArray(0),
     private val path: String = "/v1/traces",
+    private val responseDelay: Duration = Duration.ZERO,
 ) : AutoCloseable {
 
     private val executor: ExecutorService = Executors.newCachedThreadPool { runnable ->
@@ -61,6 +62,14 @@ class ControlledOtlpCollector(
                 body = body,
             )
             receivedLatch.countDown()
+
+            if (!responseDelay.isZero) {
+                try {
+                    Thread.sleep(responseDelay.toMillis())
+                } catch (interrupted: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                }
+            }
 
             val reply = responseBody.copyOf()
             exchange.sendResponseHeaders(status, reply.size.toLong())

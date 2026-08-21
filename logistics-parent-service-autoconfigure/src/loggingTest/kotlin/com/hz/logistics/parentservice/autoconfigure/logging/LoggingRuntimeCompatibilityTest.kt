@@ -1,6 +1,7 @@
 package com.hz.logistics.parentservice.autoconfigure.logging
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.hz.logistics.parentservice.autoconfigure.observability.PlatformCorrelationContext
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.sdk.OpenTelemetrySdk
 import io.opentelemetry.sdk.common.CompletableResultCode
@@ -99,6 +100,9 @@ class LoggingRuntimeCompatibilityTest {
 @ExtendWith(OutputCaptureExtension::class)
 class UnavailableOtelLoggingCompatibilityTest {
 
+    @Autowired
+    private lateinit var correlationContext: PlatformCorrelationContext
+
     @Test
     fun unavailableOpenTelemetryLoggingDoesNotPreventSanitizedConsoleOutput(output: CapturedOutput) {
         LoggerFactory.getLogger("runtime.unavailable")
@@ -110,6 +114,21 @@ class UnavailableOtelLoggingCompatibilityTest {
         assertThat(ObjectMapper().readTree(consoleLine).path("message").asText())
             .doesNotContain("unavailable-secret-canary")
             .contains("[MASKED]")
+    }
+
+    @Test
+    fun scopedFallbackCorrelationReachesThePreSinkBoundaryAndDoesNotLeak(output: CapturedOutput) {
+        val fallbackTraceId = correlationContext.withExecutionScope {
+            LoggerFactory.getLogger("runtime.fallback")
+                .info("fallback-correlation-canary")
+            correlationContext.requiredTraceId()
+        }
+        LoggerFactory.getLogger("runtime.fallback").info("post-fallback-correlation-canary")
+
+        val fallbackLine = output.out.lines().last { it.contains("\"message\":\"fallback-correlation-canary\"") }
+        val postScopeLine = output.out.lines().last { it.contains("post-fallback-correlation-canary") }
+        assertThat(ObjectMapper().readTree(fallbackLine).path("traceId").asText()).isEqualTo(fallbackTraceId)
+        assertThat(ObjectMapper().readTree(postScopeLine).path("traceId").isMissingNode).isTrue()
     }
 }
 

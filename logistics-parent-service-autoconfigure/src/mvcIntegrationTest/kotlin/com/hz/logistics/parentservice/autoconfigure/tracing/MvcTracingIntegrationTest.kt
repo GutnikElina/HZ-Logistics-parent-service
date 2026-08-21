@@ -60,11 +60,17 @@ class MvcTracingIntegrationTest {
     }
 
     @Test
-    fun `replaces missing or malformed inbound context without failing the MVC request`() {
+    fun `creates and propagates a fresh trace when traceparent is absent`() {
         val missingContext = request("/traces/outbound")
-        val malformedContext = request("/traces/outbound", "not-a-traceparent")
 
         assertThat(missingContext.statusCode()).isEqualTo(200)
+        traceParent(outboundCollector.requests.last().headers).isValid().hasTraceIdNotEqualTo(TRACE_ID)
+    }
+
+    @Test
+    fun `replaces malformed inbound context without failing the MVC request`() {
+        val malformedContext = request("/traces/outbound", "not-a-traceparent")
+
         assertThat(malformedContext.statusCode()).isEqualTo(200)
         traceParent(outboundCollector.requests.last().headers).isValid().hasTraceIdNotEqualTo(TRACE_ID)
     }

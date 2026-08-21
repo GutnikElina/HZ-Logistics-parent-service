@@ -1,6 +1,8 @@
 package com.hz.logistics.parentservice.autoconfigure.errors
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.hz.logistics.parentservice.autoconfigure.logging.PlatformLogSanitizer
+import com.hz.logistics.parentservice.autoconfigure.metrics.PlatformMetricsCustomizer
 import com.hz.logistics.parentservice.autoconfigure.observability.PlatformCorrelationContext
 import com.hz.logistics.parentservice.autoconfigure.support.mockJwt
 import jakarta.servlet.http.HttpServletResponse
@@ -13,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
+import org.springframework.context.ApplicationContext
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -29,13 +32,14 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.server.ResponseStatusException
 
 @SpringBootTest(
     classes = [MvcProblemDetailFixtureApplication::class],
     properties = [
         "logistics.parent-service.security.issuer=https://identity.example.test/realms/logistics",
+        "logistics.parent-service.security.public-endpoints[0]=/problem/method-authentication",
         "logistics.parent-service.errors.detail-policy=SAFE",
         "management.otlp.metrics.export.enabled=false",
     ],
@@ -71,6 +75,11 @@ class MvcProblemDetailIntegrationTest {
                 .response,
             500,
             "/problem/unhandled",
+        )
+        assertProblem(
+            mockMvc.perform(get("/problem/method-authentication")).andReturn().response,
+            403,
+            "/problem/method-authentication",
         )
     }
 
@@ -153,11 +162,16 @@ class MvcApplicationOwnedProblemHandlerIntegrationTest {
     @Autowired
     private lateinit var problemDetailFactories: Map<String, PlatformProblemDetailFactory>
 
+    @Autowired
+    private lateinit var applicationContext: ApplicationContext
+
     @Test
     fun applicationProblemFactoryAndHandlerReplaceOnlyTheMvcErrorContribution() {
         val response = mockMvc.perform(get("/problem/unhandled")).andReturn().response
 
         assertThat(problemDetailFactories).containsOnlyKeys("applicationProblemDetailFactory")
+        assertThat(applicationContext.getBeansOfType(PlatformMetricsCustomizer::class.java)).hasSize(1)
+        assertThat(applicationContext.getBeansOfType(PlatformLogSanitizer::class.java)).hasSize(1)
         assertThat(response.status).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value())
         assertThat(response.contentType).contains(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
         assertThat(response.contentAsString).contains("urn:application:problem:override")
@@ -201,6 +215,10 @@ class MvcProblemDetailFixtureController {
     @PreAuthorize("hasAuthority('ROLE_admin')")
     fun secured(): Map<String, String> = mapOf("status" to "ok")
 
+    @GetMapping("/problem/method-authentication")
+    @PreAuthorize("isAuthenticated()")
+    fun methodAuthentication(): Map<String, String> = mapOf("status" to "ok")
+
     @GetMapping("/problem/client")
     fun clientFailure(): Nothing = throw ResponseStatusException(HttpStatus.BAD_REQUEST, sensitiveDetail())
 
@@ -223,7 +241,7 @@ class MvcProblemDetailFixtureController {
             "customerEmail=problem@example.test recipientPhone=+48123456789"
 }
 
-@RestControllerAdvice
+@ControllerAdvice
 class MvcApplicationProblemAdvice {
 
     @ExceptionHandler(IllegalStateException::class)

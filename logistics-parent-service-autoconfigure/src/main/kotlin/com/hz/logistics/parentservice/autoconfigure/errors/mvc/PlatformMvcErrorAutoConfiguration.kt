@@ -2,6 +2,7 @@ package com.hz.logistics.parentservice.autoconfigure.errors.mvc
 
 import com.hz.logistics.parentservice.autoconfigure.PlatformAutoConfiguration
 import com.hz.logistics.parentservice.autoconfigure.errors.PlatformProblemDetailFactory
+import com.hz.logistics.parentservice.autoconfigure.observability.PlatformCorrelationContext
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.boot.autoconfigure.AutoConfiguration
@@ -17,10 +18,13 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ProblemDetail
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.AccessDeniedException
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException
 import org.springframework.validation.BindException
+import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.filter.OncePerRequestFilter
 import org.springframework.web.server.ResponseStatusException
 
 /** Servlet/MVC adapter for the platform's safe, stack-neutral problem contract. */
@@ -37,12 +41,23 @@ import org.springframework.web.server.ResponseStatusException
 class PlatformMvcErrorAutoConfiguration {
 
     /**
+     * Establishes a fallback ID before MVC tracing/error handling can run and
+     * clears it after every dispatch, including an error dispatch on a reused
+     * worker thread.
+     */
+    @Bean
+    @ConditionalOnMissingBean(PlatformMvcCorrelationScopeFilter::class)
+    fun platformMvcCorrelationScopeFilter(
+        correlationContext: PlatformCorrelationContext,
+    ): PlatformMvcCorrelationScopeFilter = PlatformMvcCorrelationScopeFilter(correlationContext)
+
+    /**
      * An application controller advice owns MVC error semantics.  That owner
      * is intentionally independent from the shared factory, metrics, tracing,
      * and logging capabilities.
      */
     @Bean
-    @ConditionalOnMissingBean(annotation = [RestControllerAdvice::class])
+    @ConditionalOnMissingBean(annotation = [ControllerAdvice::class])
     fun platformMvcProblemAdvice(factory: PlatformProblemDetailFactory): PlatformMvcProblemAdvice =
         PlatformMvcProblemAdvice(factory)
 }
@@ -74,6 +89,13 @@ class PlatformMvcProblemAdvice(
         response: HttpServletResponse,
     ): ResponseEntity<ProblemDetail>? = problem(response, HttpStatus.FORBIDDEN.value(), request.path())
 
+    @ExceptionHandler(AuthenticationCredentialsNotFoundException::class)
+    fun methodSecurityForbidden(
+        exception: AuthenticationCredentialsNotFoundException,
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+    ): ResponseEntity<ProblemDetail>? = problem(response, HttpStatus.FORBIDDEN.value(), request.path())
+
     /**
      * Do not use exception messages as a response detail: even a configured
      * SAFE policy must not turn a controller, request body, or header into an
@@ -101,4 +123,23 @@ class PlatformMvcProblemAdvice(
 
     private fun HttpServletRequest.path(): String =
         requestURI.orEmpty().removePrefix(contextPath.orEmpty()).ifEmpty { "/" }
+}
+
+class PlatformMvcCorrelationScopeFilter(
+    private val correlationContext: PlatformCorrelationContext,
+) : OncePerRequestFilter(), Ordered {
+
+    override fun getOrder(): Int = Ordered.HIGHEST_PRECEDENCE
+
+    override fun shouldNotFilterAsyncDispatch(): Boolean = false
+
+    override fun doFilterInternal(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        filterChain: jakarta.servlet.FilterChain,
+    ) {
+        correlationContext.withExecutionScope {
+            filterChain.doFilter(request, response)
+        }
+    }
 }

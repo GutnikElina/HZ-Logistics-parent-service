@@ -142,6 +142,9 @@ open class PlatformProblemDetailFactory(
         .replace(SENSITIVE_ASSIGNMENT_PATTERN) { match ->
             "${match.groupValues[1]}=$REDACTION_MASK"
         }
+        .replace(SENSITIVE_VALUE_PATTERN, REDACTION_MASK)
+        .replace(EMAIL_PATTERN, REDACTION_MASK)
+        .replace(PHONE_PATTERN, REDACTION_MASK)
         .replace(STACK_TRACE_PATTERN, REDACTION_MASK)
         .replace(EXCEPTION_CLASS_PATTERN, REDACTION_MASK)
 
@@ -214,9 +217,16 @@ open class PlatformProblemDetailFactory(
         private val SENSITIVE_ASSIGNMENT_PATTERN = Regex(
             "(?i)\\b(password|passwd|pwd|authorization|access[-_.]?token|refresh[-_.]?token|id[-_.]?token|token|secret|client[-_.]?secret|api[-_.]?key)\\s*[:=]\\s*([^\\s,;]+)",
         )
-        private val STACK_TRACE_PATTERN = Regex("(?m)^\\s*(?:at\\s+.*|Caused by:.*|Suppressed:.*)$")
-        private val EXCEPTION_CLASS_PATTERN = Regex(
-            "(?<![A-Za-z0-9_$])(?:[a-z_][A-Za-z0-9_$]*\\.)+[A-Z][A-Za-z0-9_$]*(?:Exception|Error|Throwable)(?![A-Za-z0-9_$])",
+        private val STACK_TRACE_PATTERN = Regex(
+            "(?m)(?:^|\\s)(?:at\\s+[A-Za-z0-9_.$]+\\([^\\r\\n)]*\\)|Caused by:\\s*[^\\r\\n]+|Suppressed:\\s*[^\\r\\n]+)",
         )
+        private val EXCEPTION_CLASS_PATTERN = Regex(
+            "(?<![A-Za-z0-9_$])(?:(?:[a-z_][A-Za-z0-9_$]*\\.)*)[A-Z][A-Za-z0-9_$]*(?:Exception|Error|Throwable)(?![A-Za-z0-9_$])",
+        )
+        private val SENSITIVE_VALUE_PATTERN = Regex(
+            "(?i)\\b(?:password|passwd|pwd|access[-_.]?token|refresh[-_.]?token|id[-_.]?token|token|secret|client[-_.]?secret|api[-_.]?key)(?:[-_.][A-Za-z0-9]+)+\\b",
+        )
+        private val EMAIL_PATTERN = Regex("(?i)\\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}\\b")
+        private val PHONE_PATTERN = Regex("(?<!\\d)\\+?\\d[\\d .()-]{6,}\\d(?!\\d)")
     }
 }

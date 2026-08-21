@@ -1,9 +1,12 @@
 package com.hz.logistics.parentservice.autoconfigure.observability
 
 import io.micrometer.tracing.Tracer
+import io.micrometer.context.ContextRegistry
+import io.micrometer.context.ThreadLocalAccessor
 import org.springframework.beans.factory.ObjectProvider
 import java.security.SecureRandom
 import java.util.Locale
+import java.util.concurrent.atomic.AtomicLong
 
 /**
  * Read-only access to the trace identifiers that are current for the calling
@@ -21,6 +24,11 @@ open class PlatformCorrelationContext(
 ) {
 
     private val executionFallbackTraceId = ThreadLocal<String>()
+    private val reactiveScopeKey = "$REACTIVE_SCOPE_KEY_PREFIX${reactiveScopeSequence.incrementAndGet()}"
+
+    init {
+        registerReactiveScopeAccessor()
+    }
 
     /**
      * Retains the lightweight constructor used by direct consumers and tests.
@@ -46,7 +54,7 @@ open class PlatformCorrelationContext(
 
     /** A snapshot suitable for structured logging and error responses. */
     open fun current(): Correlation? {
-        val traceId = currentTraceId() ?: return null
+        val traceId = currentTraceId() ?: executionFallbackTraceId.get() ?: return null
         return Correlation(traceId, currentSpanId())
     }
 
@@ -72,6 +80,26 @@ open class PlatformCorrelationContext(
      */
     open fun beginExecutionScope(): String = traceIdOrCreate()
 
+    /**
+     * Open a scope that can be restored after an MVC dispatch or a reactive
+     * subscription. The value is also registered with Micrometer Context
+     * Propagation, allowing Reactor's automatic propagation to restore it on
+     * scheduler boundaries without attaching it to unrelated work.
+     */
+    open fun openExecutionScope(): ExecutionScope {
+        val previous = executionFallbackTraceId.get()
+        return ExecutionScope(previous, beginExecutionScope())
+    }
+
+    /** Restore the execution state that was active before [scope] opened. */
+    open fun closeExecutionScope(scope: ExecutionScope) {
+        if (scope.previousTraceId == null) {
+            executionFallbackTraceId.remove()
+        } else {
+            executionFallbackTraceId.set(scope.previousTraceId)
+        }
+    }
+
     /** Clear the fallback value associated with the current execution. */
     open fun endExecutionScope() {
         executionFallbackTraceId.remove()
@@ -79,12 +107,11 @@ open class PlatformCorrelationContext(
 
     /** Run [block] with one fallback ID and restore the previous scope. */
     open fun <T> withExecutionScope(block: () -> T): T {
-        val previous = executionFallbackTraceId.get()
-        beginExecutionScope()
+        val scope = openExecutionScope()
         return try {
             block()
         } finally {
-            if (previous == null) executionFallbackTraceId.remove() else executionFallbackTraceId.set(previous)
+            closeExecutionScope(scope)
         }
     }
 
@@ -104,13 +131,40 @@ open class PlatformCorrelationContext(
         val spanId: String?,
     )
 
+    /** Opaque handle that makes nested scopes restore their parent safely. */
+    class ExecutionScope internal constructor(
+        internal val previousTraceId: String?,
+        val traceId: String,
+    )
+
     private fun currentTraceContext() =
         runCatching { tracerProvider()?.currentSpan()?.context() }.getOrNull()
+
+    private fun registerReactiveScopeAccessor() {
+        ContextRegistry.getInstance().registerThreadLocalAccessor(
+            object : ThreadLocalAccessor<String> {
+                override fun key(): String = reactiveScopeKey
+
+                override fun getValue(): String? = executionFallbackTraceId.get()
+
+                override fun setValue(value: String) {
+                    executionFallbackTraceId.set(value)
+                }
+
+                override fun reset() {
+                    executionFallbackTraceId.remove()
+                }
+            },
+        )
+    }
 
     companion object {
         private const val TRACE_ID_LENGTH = 32
         private const val SPAN_ID_LENGTH = 16
         private val random = SecureRandom()
+        private val reactiveScopeSequence = AtomicLong()
+        private const val REACTIVE_SCOPE_KEY_PREFIX =
+            "com.hz.logistics.parentservice.autoconfigure.execution-fallback-trace-id."
 
         /** Generate a lowercase, non-zero W3C trace ID. */
         @JvmStatic

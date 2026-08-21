@@ -1,6 +1,8 @@
 package com.hz.logistics.parentservice.autoconfigure.errors
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.hz.logistics.parentservice.autoconfigure.logging.PlatformLogSanitizer
+import com.hz.logistics.parentservice.autoconfigure.metrics.PlatformMetricsCustomizer
 import com.hz.logistics.parentservice.autoconfigure.observability.PlatformCorrelationContext
 import com.hz.logistics.parentservice.autoconfigure.support.mockJwt
 import org.assertj.core.api.Assertions.assertThat
@@ -13,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
+import org.springframework.context.ApplicationContext
 import org.springframework.core.io.buffer.DataBuffer
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
@@ -31,7 +34,7 @@ import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.server.ResponseStatusException
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
@@ -41,6 +44,7 @@ import reactor.core.scheduler.Schedulers
     webEnvironment = WebEnvironment.RANDOM_PORT,
     properties = [
         "logistics.parent-service.security.issuer=https://identity.example.test/realms/logistics",
+        "logistics.parent-service.security.public-endpoints[0]=/problem/method-authentication",
         "logistics.parent-service.errors.detail-policy=SAFE",
         "management.otlp.metrics.export.enabled=false",
     ],
@@ -82,6 +86,11 @@ class WebFluxProblemDetailIntegrationTest {
                 .returnResult(),
             500,
             "/problem/unhandled",
+        )
+        assertProblem(
+            client.get().uri("/problem/method-authentication").exchange().expectBody().returnResult(),
+            403,
+            "/problem/method-authentication",
         )
     }
 
@@ -173,6 +182,9 @@ class WebFluxApplicationOwnedProblemHandlerIntegrationTest {
     @Autowired
     private lateinit var problemDetailFactories: Map<String, PlatformProblemDetailFactory>
 
+    @Autowired
+    private lateinit var applicationContext: ApplicationContext
+
     private val client: WebTestClient by lazy {
         WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build()
     }
@@ -182,6 +194,8 @@ class WebFluxApplicationOwnedProblemHandlerIntegrationTest {
         val response = client.get().uri("/problem/unhandled").exchange().expectBody().returnResult()
 
         assertThat(problemDetailFactories).containsOnlyKeys("applicationProblemDetailFactory")
+        assertThat(applicationContext.getBeansOfType(PlatformMetricsCustomizer::class.java)).hasSize(1)
+        assertThat(applicationContext.getBeansOfType(PlatformLogSanitizer::class.java)).hasSize(1)
         assertThat(response.status.value()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR.value())
         assertThat(response.responseHeaders.contentType?.toString())
             .contains(MediaType.APPLICATION_PROBLEM_JSON_VALUE)
@@ -227,6 +241,10 @@ class WebFluxProblemDetailFixtureController {
     @PreAuthorize("hasAuthority('ROLE_admin')")
     fun secured(): Mono<Map<String, String>> = Mono.just(mapOf("status" to "ok"))
 
+    @GetMapping("/problem/method-authentication")
+    @PreAuthorize("isAuthenticated()")
+    fun methodAuthentication(): Mono<Map<String, String>> = Mono.just(mapOf("status" to "ok"))
+
     @GetMapping("/problem/client")
     fun clientFailure(): Mono<Nothing> = Mono.error(ResponseStatusException(HttpStatus.BAD_REQUEST, sensitiveDetail()))
 
@@ -254,7 +272,7 @@ class WebFluxProblemDetailFixtureController {
             "customerEmail=problem@example.test recipientPhone=+48123456789"
 }
 
-@RestControllerAdvice
+@ControllerAdvice
 class WebFluxApplicationProblemAdvice {
 
     @ExceptionHandler(IllegalStateException::class)

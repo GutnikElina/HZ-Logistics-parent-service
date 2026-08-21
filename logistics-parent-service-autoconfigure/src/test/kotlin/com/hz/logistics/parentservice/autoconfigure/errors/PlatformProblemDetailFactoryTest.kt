@@ -119,11 +119,18 @@ class PlatformProblemDetailFactoryTest {
             safeProperties,
         )
 
-        val detail = "java.lang.IllegalStateException: leaked\n    at com.hz.logistics.SecretController.handle(SecretController.kt:42)"
+        val detail = "IllegalStateException: leaked at com.hz.logistics.SecretController.handle(SecretController.kt:42) " +
+            "Caused by: com.example.SecretFailure customer@example.test +48123456789"
         val sanitized = factory.createSafe(HttpStatus.INTERNAL_SERVER_ERROR, "/failure", detail).detail
 
         assertThat(sanitized)
-            .doesNotContain("java.lang.IllegalStateException", "at com.hz.logistics.SecretController.handle")
+            .doesNotContain(
+                "IllegalStateException",
+                "com.hz.logistics.SecretController.handle",
+                "Caused by:",
+                "customer@example.test",
+                "+48123456789",
+            )
             .contains(PlatformProblemDetailFactory.REDACTION_MASK)
     }
 
@@ -140,6 +147,18 @@ class PlatformProblemDetailFactoryTest {
 
         assertThat(correlation.requiredTraceId()).isEqualTo(TRACE_ID_SUPPLIER())
         correlation.endExecutionScope()
+    }
+
+    @Test
+    fun `current correlation exposes only a scoped fallback and clears it afterwards`() {
+        val correlation = PlatformCorrelationContext(fallbackTraceIdSupplier = TRACE_ID_SUPPLIER)
+
+        assertThat(correlation.current()).isNull()
+        val scope = correlation.openExecutionScope()
+        assertThat(correlation.current()?.traceId).isEqualTo(scope.traceId)
+
+        correlation.closeExecutionScope(scope)
+        assertThat(correlation.current()).isNull()
     }
 
     companion object {

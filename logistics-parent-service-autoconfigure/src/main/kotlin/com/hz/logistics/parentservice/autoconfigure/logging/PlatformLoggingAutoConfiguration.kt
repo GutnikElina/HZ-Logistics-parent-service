@@ -2,6 +2,7 @@ package com.hz.logistics.parentservice.autoconfigure.logging
 
 import ch.qos.logback.classic.LoggerContext
 import com.hz.logistics.parentservice.autoconfigure.PlatformAutoConfiguration
+import com.hz.logistics.parentservice.autoconfigure.observability.PlatformCorrelationContext
 import com.hz.logistics.parentservice.autoconfigure.properties.PlatformProperties
 import com.hz.logistics.parentservice.autoconfigure.tracing.PlatformTracingAutoConfiguration
 import io.opentelemetry.api.OpenTelemetry
@@ -43,6 +44,7 @@ class PlatformLoggingAutoConfiguration {
         properties: PlatformProperties,
         sanitizerProvider: ObjectProvider<PlatformLogSanitizer>,
         openTelemetryProvider: ObjectProvider<OpenTelemetry>,
+        correlationContext: PlatformCorrelationContext,
     ): PlatformLoggingPipeline {
         val configuredPolicy = sanitizerProvider.getObject()
         val baseline = DefaultPlatformLogSanitizer(properties.logging)
@@ -50,6 +52,7 @@ class PlatformLoggingAutoConfiguration {
         val redactors = installedRedactors()
         redactors.forEach {
             it.setSanitizer(enforced)
+            it.setCorrelationContext(correlationContext)
             it.setPipelineEnabled(properties.logging.enabled)
             it.setConsoleEnabled(properties.logging.consoleEnabled)
         }

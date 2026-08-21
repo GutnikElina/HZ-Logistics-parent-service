@@ -5,9 +5,12 @@ import com.hz.logistics.parentservice.autoconfigure.properties.OtlpCompression
 import com.hz.logistics.parentservice.autoconfigure.properties.OtlpProperties
 import com.hz.logistics.parentservice.autoconfigure.properties.OtlpProtocol
 import com.hz.logistics.parentservice.autoconfigure.properties.PlatformProperties
+import com.hz.logistics.parentservice.autoconfigure.support.ControlledOtlpCollector
 import io.opentelemetry.api.OpenTelemetry
 import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
 import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter
+import io.opentelemetry.sdk.trace.SdkTracerProvider
+import io.opentelemetry.sdk.trace.export.BatchSpanProcessor
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
@@ -123,6 +126,34 @@ class OtlpConfigurationTest {
             .isInstanceOf(OtlpHttpSpanExporter::class.java)
         assertThat(OtlpTracingCustomizer(grpcProperties.tracing).createExporter())
             .isInstanceOf(OtlpGrpcSpanExporter::class.java)
+    }
+
+    @Test
+    fun `exports to a delayed canonical HTTP collector off the calling thread`() {
+        ControlledOtlpCollector(responseDelay = Duration.ofMillis(250)).start().use { collector ->
+            val properties = PlatformProperties().apply {
+                tracing.otlp.endpoint = collector.traceEndpoint
+                tracing.otlp.protocol = OtlpProtocol.HTTP_PROTOBUF
+                tracing.otlp.headers = mapOf("x-otlp-api-key" to "test-only-secret")
+                tracing.otlp.timeout = Duration.ofSeconds(2)
+                tracing.otlp.compression = OtlpCompression.GZIP
+            }
+            val processor = BatchSpanProcessor.builder(OtlpTracingCustomizer(properties.tracing).createExporter())
+                .setScheduleDelay(Duration.ofMillis(10))
+                .build()
+            val tracerProvider = SdkTracerProvider.builder().addSpanProcessor(processor).build()
+            try {
+                val start = System.nanoTime()
+                tracerProvider.get("otlp-configuration-test").spanBuilder("delayed-export").startSpan().end()
+
+                assertThat(Duration.ofNanos(System.nanoTime() - start)).isLessThan(Duration.ofMillis(100))
+                assertThat(collector.awaitRequest(Duration.ofSeconds(2))).isTrue()
+                assertThat(collector.requests.single().headers)
+                    .containsEntry("X-otlp-api-key", listOf("test-only-secret"))
+            } finally {
+                tracerProvider.close()
+            }
+        }
     }
 
     private fun properties(context: org.springframework.boot.test.context.assertj.AssertableApplicationContext): PlatformProperties =

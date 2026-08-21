@@ -106,6 +106,18 @@ class WebFluxTracingIntegrationTest {
             .contains("\"traceId\":\"$TRACE_ID\"")
     }
 
+    @Test
+    fun `rejecting exporter does not fail a successful managed WebClient request`() {
+        exportCollector.reject()
+
+        http.get().uri("/traces/outbound")
+            .header("traceparent", VALID_TRACE_PARENT)
+            .exchange()
+            .expectStatus().isOk
+
+        traceParent(outboundCollector.requests.last().headers).isValid().hasTraceId(TRACE_ID)
+    }
+
     private companion object {
         const val TRACE_ID = "4bf92f3577b34da6a3ce929d0e0e4736"
         const val VALID_TRACE_PARENT = "00-$TRACE_ID-00f067aa0ba902b7-01"

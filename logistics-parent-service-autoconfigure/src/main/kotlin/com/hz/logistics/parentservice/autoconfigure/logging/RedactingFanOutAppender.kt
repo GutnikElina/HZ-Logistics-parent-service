@@ -10,6 +10,7 @@ import ch.qos.logback.core.Appender
 import ch.qos.logback.core.UnsynchronizedAppenderBase
 import ch.qos.logback.core.spi.AppenderAttachable
 import ch.qos.logback.core.spi.AppenderAttachableImpl
+import com.hz.logistics.parentservice.autoconfigure.observability.PlatformCorrelationContext
 import com.hz.logistics.parentservice.autoconfigure.properties.LoggingProperties
 import io.opentelemetry.api.trace.Span
 import org.slf4j.LoggerFactory
@@ -39,6 +40,9 @@ class RedactingFanOutAppender : UnsynchronizedAppenderBase<ILoggingEvent>(), App
     @Volatile
     private var consoleEnabled: Boolean = true
 
+    @Volatile
+    private var correlationContext: PlatformCorrelationContext? = null
+
     /** Allows Spring property substitution in the default Logback resource. */
     fun setPipelineEnabled(enabled: Boolean) {
         pipelineEnabled = enabled
@@ -52,6 +56,11 @@ class RedactingFanOutAppender : UnsynchronizedAppenderBase<ILoggingEvent>(), App
     /** Replaces the configurable policy; callers must enforce the baseline. */
     fun setSanitizer(sanitizer: PlatformLogSanitizer) {
         this.sanitizer = sanitizer
+    }
+
+    /** Supplies request-scoped fallback correlation when no OTel span exists. */
+    fun setCorrelationContext(correlationContext: PlatformCorrelationContext) {
+        this.correlationContext = correlationContext
     }
 
     override fun append(event: ILoggingEvent) {
@@ -125,7 +134,8 @@ class RedactingFanOutAppender : UnsynchronizedAppenderBase<ILoggingEvent>(), App
         return if (spanContext.isValid) {
             Correlation(spanContext.traceId, spanContext.spanId)
         } else {
-            Correlation(null, null)
+            correlationContext?.current()?.let { Correlation(it.traceId, it.spanId) }
+                ?: Correlation(null, null)
         }
     }
 

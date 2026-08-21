@@ -2,6 +2,7 @@ package com.hz.logistics.parentservice.autoconfigure.errors.reactive
 
 import com.hz.logistics.parentservice.autoconfigure.PlatformAutoConfiguration
 import com.hz.logistics.parentservice.autoconfigure.errors.PlatformProblemDetailFactory
+import com.hz.logistics.parentservice.autoconfigure.observability.PlatformCorrelationContext
 import org.springframework.boot.autoconfigure.AutoConfiguration
 import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.AutoConfigureBefore
@@ -46,9 +47,16 @@ import java.nio.charset.StandardCharsets
 class PlatformWebFluxErrorAutoConfiguration {
 
     @Bean
-    @ConditionalOnMissingBean(annotation = [RestControllerAdvice::class])
+    @ConditionalOnMissingBean(annotation = [ControllerAdvice::class])
     fun platformWebFluxMethodSecurityProblemAdvice(factory: PlatformProblemDetailFactory):
         PlatformWebFluxMethodSecurityProblemAdvice = PlatformWebFluxMethodSecurityProblemAdvice(factory)
+
+    /** Opens a Reactor-propagated fallback scope before request handling. */
+    @Bean
+    @ConditionalOnMissingBean(PlatformWebFluxCorrelationScopeFilter::class)
+    fun platformWebFluxCorrelationScopeFilter(
+        correlationContext: PlatformCorrelationContext,
+    ): PlatformWebFluxCorrelationScopeFilter = PlatformWebFluxCorrelationScopeFilter(correlationContext)
 
     /**
      * `spring-boot-webflux` is intentionally compile-only. Isolating the
@@ -138,6 +146,21 @@ class PlatformWebFluxMethodSecurityProblemAdvice(
                 .contentType(PlatformProblemDetailFactory.PROBLEM_MEDIA_TYPE)
                 .body(factory.forbidden(path)),
         )
+    }
+}
+
+class PlatformWebFluxCorrelationScopeFilter(
+    private val correlationContext: PlatformCorrelationContext,
+) : org.springframework.web.server.WebFilter, Ordered {
+
+    override fun getOrder(): Int = Ordered.HIGHEST_PRECEDENCE
+
+    override fun filter(
+        exchange: ServerWebExchange,
+        chain: org.springframework.web.server.WebFilterChain,
+    ): Mono<Void> = Mono.defer {
+        val scope = correlationContext.openExecutionScope()
+        chain.filter(exchange).doFinally { correlationContext.closeExecutionScope(scope) }
     }
 }
 
