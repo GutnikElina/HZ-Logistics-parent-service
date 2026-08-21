@@ -5,9 +5,9 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.boot.SpringBootConfiguration
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
-import org.springframework.boot.test.autoconfigure.web.reactive.AutoConfigureWebTestClient
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
+import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
@@ -15,9 +15,8 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.core.Authentication
-import org.springframework.security.oauth2.jwt.JwtException
+import org.springframework.security.oauth2.jwt.BadJwtException
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder
-import org.springframework.security.test.web.reactive.server.SecurityMockServerConfigurers.mockJwt
 import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.bind.annotation.GetMapping
@@ -35,12 +34,15 @@ import reactor.core.publisher.Mono
         "management.endpoints.web.exposure.include=health,info",
     ],
 )
-@AutoConfigureWebTestClient
 class WebFluxSecurityIntegrationTest(
 ) {
 
-    @Autowired
-    private lateinit var webTestClient: WebTestClient
+    @LocalServerPort
+    private var port: Int = 0
+
+    private val webTestClient: WebTestClient by lazy {
+        WebTestClient.bindToServer().baseUrl("http://localhost:$port").build()
+    }
 
     @Test
     fun `denies protected requests by default with a safe problem response`() {
@@ -61,12 +63,9 @@ class WebFluxSecurityIntegrationTest(
 
     @Test
     fun `accepts a mock jwt and applies nested role authorities`() {
-        webTestClient.mutateWith(
-            mockJwt().jwt { token ->
-                token.claim("realm_access", mapOf("roles" to listOf("dispatcher")))
-            },
-        )
-            .get().uri("/protected").exchange()
+        webTestClient.get().uri("/protected")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer trusted")
+            .exchange()
             .expectStatus().isOk
             .expectBody()
             .jsonPath("$.authorities[0]").isEqualTo("ROLE_dispatcher")
@@ -94,12 +93,15 @@ class WebFluxSecurityIntegrationTest(
         "management.endpoints.web.exposure.include=health,info",
     ],
 )
-@AutoConfigureWebTestClient
 class WebFluxSecurityActuatorOptOutIntegrationTest(
 ) {
 
-    @Autowired
-    private lateinit var webTestClient: WebTestClient
+    @LocalServerPort
+    private var port: Int = 0
+
+    private val webTestClient: WebTestClient by lazy {
+        WebTestClient.bindToServer().baseUrl("http://localhost:$port").build()
+    }
 
     @Test
     fun `protects actuator endpoints when their public default is disabled`() {
@@ -112,12 +114,15 @@ class WebFluxSecurityActuatorOptOutIntegrationTest(
     classes = [WebFluxApplicationOwnedSecurityFixtureApplication::class],
     webEnvironment = WebEnvironment.RANDOM_PORT,
 )
-@AutoConfigureWebTestClient
 class WebFluxApplicationOwnedSecurityIntegrationTest(
 ) {
 
-    @Autowired
-    private lateinit var webTestClient: WebTestClient
+    @LocalServerPort
+    private var port: Int = 0
+
+    private val webTestClient: WebTestClient by lazy {
+        WebTestClient.bindToServer().baseUrl("http://localhost:$port").build()
+    }
 
     @Autowired
     private lateinit var securityWebFilterChains: Map<String, SecurityWebFilterChain>
@@ -136,7 +141,13 @@ class WebFluxSecurityFixtureApplication {
 
     @Bean
     fun reactiveJwtDecoder(): ReactiveJwtDecoder =
-        ReactiveJwtDecoder { Mono.error(JwtException("invalid test token")) }
+        ReactiveJwtDecoder { token ->
+            if (token == "trusted") {
+                Mono.just(mockJwt(claims = mapOf("realm_access" to mapOf("roles" to listOf("dispatcher")))))
+            } else {
+                Mono.error(BadJwtException("invalid test token"))
+            }
+        }
 }
 
 @SpringBootConfiguration(proxyBeanMethods = false)
@@ -156,6 +167,6 @@ class WebFluxSecurityFixtureController {
     fun publicEndpoint(): Mono<Map<String, String>> = Mono.just(mapOf("status" to "ok"))
 
     @GetMapping("/protected")
-    fun protectedEndpoint(authentication: Authentication): Mono<Map<String, List<String>>> =
-        Mono.just(mapOf("authorities" to authentication.authorities.map { it.authority }))
+    fun protectedEndpoint(authentication: Authentication?): Mono<Map<String, List<String>>> =
+        Mono.just(mapOf("authorities" to authentication?.authorities?.mapNotNull { it.authority }.orEmpty()))
 }

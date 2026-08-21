@@ -15,6 +15,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot")
     implementation("org.springframework.boot:spring-boot-autoconfigure")
     implementation("org.springframework.boot:spring-boot-actuator-autoconfigure")
+    // Supplies the shared health/info endpoint matchers without selecting a
+    // Servlet or Reactive web implementation.
+    implementation("org.springframework.boot:spring-boot-security")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
     implementation("org.springframework.security:spring-security-core")
@@ -97,6 +100,7 @@ dependencies {
     add("mvcIntegrationTestImplementation", "org.springframework.boot:spring-boot-starter-test") {
         exclude(group = "org.mockito", module = "mockito-junit-jupiter")
     }
+    add("mvcIntegrationTestImplementation", "org.springframework.boot:spring-boot-webmvc-test")
     add("mvcIntegrationTestImplementation", "org.springframework.security:spring-security-test")
     add("mvcIntegrationTestRuntimeOnly", "org.junit.platform:junit-platform-launcher")
     add("webfluxIntegrationTestImplementation", project(":logistics-parent-service-starter"))

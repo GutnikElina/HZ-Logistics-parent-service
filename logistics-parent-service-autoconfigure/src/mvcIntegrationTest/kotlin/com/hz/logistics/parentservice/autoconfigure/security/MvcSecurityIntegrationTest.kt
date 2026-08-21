@@ -5,18 +5,17 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.boot.SpringBootConfiguration
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.security.core.Authentication
+import org.springframework.security.oauth2.jwt.BadJwtException
 import org.springframework.security.oauth2.jwt.JwtDecoder
-import org.springframework.security.oauth2.jwt.JwtException
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.test.web.servlet.MockMvc
@@ -65,11 +64,7 @@ class MvcSecurityIntegrationTest(
     fun `accepts a mock jwt and applies nested role authorities`() {
         mockMvc.perform(
             get("/protected")
-                .with(
-                    jwt().jwt { token ->
-                        token.claim("realm_access", mapOf("roles" to listOf("dispatcher")))
-                    },
-                ),
+                .header(HttpHeaders.AUTHORIZATION, "Bearer trusted"),
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.authorities[0]").value("ROLE_dispatcher"))
@@ -136,7 +131,11 @@ class MvcSecurityFixtureApplication {
 
     @Bean
     fun jwtDecoder(): JwtDecoder = JwtDecoder { token ->
-        if (token == "trusted") mockJwt() else throw JwtException("invalid test token")
+        if (token == "trusted") {
+            mockJwt(claims = mapOf("realm_access" to mapOf("roles" to listOf("dispatcher"))))
+        } else {
+            throw BadJwtException("invalid test token")
+        }
     }
 }
 
@@ -157,6 +156,6 @@ class MvcSecurityFixtureController {
     fun publicEndpoint(): Map<String, String> = mapOf("status" to "ok")
 
     @GetMapping("/protected")
-    fun protectedEndpoint(authentication: Authentication): Map<String, List<String>> =
-        mapOf("authorities" to authentication.authorities.map { it.authority })
+    fun protectedEndpoint(authentication: Authentication?): Map<String, List<String>> =
+        mapOf("authorities" to authentication?.authorities?.mapNotNull { it.authority }.orEmpty())
 }

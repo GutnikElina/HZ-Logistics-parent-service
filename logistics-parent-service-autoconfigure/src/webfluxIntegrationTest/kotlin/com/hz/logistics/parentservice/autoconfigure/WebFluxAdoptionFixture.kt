@@ -1,7 +1,9 @@
 package com.hz.logistics.parentservice.autoconfigure
 
-import org.springframework.boot.autoconfigure.SpringBootApplication
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
+import org.springframework.boot.SpringBootConfiguration
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Import
 import org.springframework.security.oauth2.jwt.JwtException
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder
 import org.springframework.web.bind.annotation.GetMapping
@@ -9,7 +11,9 @@ import org.springframework.web.bind.annotation.RestController
 import reactor.core.publisher.Mono
 
 /** Minimal Reactive consumer used by the public-starter adoption test. */
-@SpringBootApplication(proxyBeanMethods = false)
+@SpringBootConfiguration(proxyBeanMethods = false)
+@EnableAutoConfiguration
+@Import(WebFluxAdoptionFixtureController::class)
 class WebFluxAdoptionFixtureApplication {
 
     @Bean

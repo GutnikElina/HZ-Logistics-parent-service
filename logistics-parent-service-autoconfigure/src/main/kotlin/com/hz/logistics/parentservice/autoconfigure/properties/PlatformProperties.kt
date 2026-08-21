@@ -12,7 +12,7 @@ import org.springframework.validation.annotation.Validated
  * no compatibility alias for an older or differently shaped root.
  */
 @Validated
-@ConfigurationProperties(prefix = "logistics.parent-service", ignoreUnknownFields = false)
+@ConfigurationProperties(prefix = "logistics.parent-service")
 class PlatformProperties {
 
     /** Security defaults and JWT resource-server settings. */
