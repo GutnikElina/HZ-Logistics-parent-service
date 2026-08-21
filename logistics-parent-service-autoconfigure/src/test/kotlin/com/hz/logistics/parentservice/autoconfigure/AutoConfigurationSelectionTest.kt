@@ -15,6 +15,28 @@ import org.springframework.context.annotation.Configuration
 class AutoConfigurationSelectionTest {
 
     @Test
+    fun `registers the shared candidates once in foundation before capability order`() {
+        val imports = requireNotNull(javaClass.classLoader.getResourceAsStream(AUTO_CONFIGURATION_IMPORTS))
+            .bufferedReader()
+            .useLines { lines ->
+                lines.map(String::trim)
+                    .filter { it.isNotEmpty() && !it.startsWith("#") }
+                    .toList()
+            }
+
+        assertThat(imports).containsExactly(
+            "com.hz.logistics.parentservice.autoconfigure.PlatformAutoConfiguration",
+            "com.hz.logistics.parentservice.autoconfigure.tracing.PlatformTracingAutoConfiguration",
+            "com.hz.logistics.parentservice.autoconfigure.metrics.PlatformMetricsAutoConfiguration",
+            MVC_SECURITY_AUTO_CONFIGURATION,
+            WEBFLUX_SECURITY_AUTO_CONFIGURATION,
+            MVC_ERROR_AUTO_CONFIGURATION,
+            WEBFLUX_ERROR_AUTO_CONFIGURATION,
+            LOGGING_AUTO_CONFIGURATION,
+        )
+    }
+
+    @Test
     fun `keeps shared non-web defaults eligible without a web application`() {
         ApplicationContextRunner()
             .withUserConfiguration(AutoConfigurationTestApplication::class.java)
@@ -90,9 +112,17 @@ class AutoConfigurationSelectionTest {
     class AutoConfigurationTestApplication
 
     private companion object {
+        const val AUTO_CONFIGURATION_IMPORTS =
+            "META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports"
         const val MVC_SECURITY_AUTO_CONFIGURATION =
             "com.hz.logistics.parentservice.autoconfigure.security.mvc.PlatformMvcSecurityAutoConfiguration"
         const val WEBFLUX_SECURITY_AUTO_CONFIGURATION =
             "com.hz.logistics.parentservice.autoconfigure.security.reactive.PlatformWebFluxSecurityAutoConfiguration"
+        const val MVC_ERROR_AUTO_CONFIGURATION =
+            "com.hz.logistics.parentservice.autoconfigure.errors.mvc.PlatformMvcErrorAutoConfiguration"
+        const val WEBFLUX_ERROR_AUTO_CONFIGURATION =
+            "com.hz.logistics.parentservice.autoconfigure.errors.reactive.PlatformWebFluxErrorAutoConfiguration"
+        const val LOGGING_AUTO_CONFIGURATION =
+            "com.hz.logistics.parentservice.autoconfigure.logging.PlatformLoggingAutoConfiguration"
     }
 }

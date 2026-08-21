@@ -320,8 +320,8 @@ Task: T058 independent capability back-off tests
 
 ## Phase 14: Convergence
 
-- [ ] T093 CRITICAL Wire the shared `PlatformProblemDetailFactory` and `TraceCorrelationConfigurer` fallback into MVC and WebFlux unhandled-error handling so an inbound trace produces the same non-empty `traceId` in the RFC 7807 response on both stacks, while preserving independent handler back-off, per T049 / FR-012 / Constitution V (partial)
-- [ ] T094 Remove or explicitly justify and order-test the direct `@Import(PlatformTracingAutoConfiguration::class)` in `PlatformAutoConfiguration`, leaving `AutoConfiguration.imports` as the single registration path for tracing, per T051 / plan: auto-configuration registration (unrequested)
+- [X] T093 CRITICAL Wire the shared `PlatformProblemDetailFactory` and `TraceCorrelationConfigurer` fallback into MVC and WebFlux unhandled-error handling so an inbound trace produces the same non-empty `traceId` in the RFC 7807 response on both stacks, while preserving independent handler back-off, per T049 / FR-012 / Constitution V (partial)
+- [X] T094 Remove or explicitly justify and order-test the direct `@Import(PlatformTracingAutoConfiguration::class)` in `PlatformAutoConfiguration`, leaving `AutoConfiguration.imports` as the single registration path for tracing, per T051 / plan: auto-configuration registration (unrequested)
 
 ## Phase 15: Convergence
 
