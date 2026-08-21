@@ -102,3 +102,12 @@ The auto-configuration module must generate Spring configuration metadata for ev
 ## Compatibility
 
 A rename, removal, type change, default change, accepted-value change, or semantic change to any property is a compatibility change requiring explicit review, a Semantic Versioning decision, migration notes, and regression tests for affected web stacks.
+
+## Release regression evidence and migration note
+
+The property contract is covered by `PlatformPropertiesBindingTest`,
+`ConfigurationMetadataTest`, `SecurityAutoConfigurationContextTest`, and
+`OtlpConfigurationTest`, with MVC/WebFlux acceptance coverage where the
+property changes affect a selected web branch. The initial `0.1.0` migration is
+additive: configure only `logistics.parent-service.*`; no alternate root or
+deprecated alias is supported.

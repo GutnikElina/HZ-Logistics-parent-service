@@ -89,3 +89,12 @@ Both MVC and WebFlux test source sets must prove:
 ## Compatibility
 
 Propagation format, outbound-client guarantee, sampling default, OTLP activation rule, correlation field names, Micrometer application API, and tracing/metrics back-off behavior are compatibility surfaces requiring review, migration notes, Semantic Versioning classification, and both-stack tests.
+
+## Release regression evidence and migration note
+
+`W3cPropagationTest`, `OtlpConfigurationTest`, `TracingBackOffTest`,
+`MvcTracingIntegrationTest`, `WebFluxTracingIntegrationTest`,
+`MvcMetricsIntegrationTest`, and `WebFluxMetricsIntegrationTest` cover the
+propagation, exporter, correlation, metrics, and independent back-off contract.
+Application observability overrides must preserve W3C propagation and
+Micrometer APIs; OTLP header values never become migration or diagnostic text.

@@ -86,3 +86,13 @@ Every response-body assertion checks problem media type, required standard field
 ## Compatibility
 
 Problem type URIs, required fields, default details, media type, trace correlation semantics, status mapping, and back-off behavior are compatibility surfaces. Changes require explicit review, Semantic Versioning classification, migration notes, and equivalent MVC/WebFlux contract tests.
+
+## Release regression evidence and migration note
+
+The shared factory is covered by `PlatformProblemDetailFactoryTest`; external
+behavior is covered by `MvcProblemDetailIntegrationTest` and
+`WebFluxProblemDetailIntegrationTest`, including safe details, committed
+responses, unsupported `Accept`, correlation, and override back-off. Consumers
+can adopt the initial contract without a migration; clients must treat
+`type`, `status`, `detail`, media type, and nonempty `traceId` as the stable
+surface.

@@ -127,8 +127,8 @@ Run the common matcher tests and both security suites:
 
 ```bash
 ./gradlew :logistics-parent-service-autoconfigure:test --tests '*PublicEndpointPattern*'
-./gradlew :logistics-parent-service-autoconfigure:mvcIntegrationTest --tests '*PublicEndpoint*'
-./gradlew :logistics-parent-service-autoconfigure:webfluxIntegrationTest --tests '*PublicEndpoint*'
+./gradlew :logistics-parent-service-autoconfigure:mvcIntegrationTest --tests '*Security*'
+./gradlew :logistics-parent-service-autoconfigure:webfluxIntegrationTest --tests '*Security*'
 ```
 
 The corpus must include literal, `?`, segment `*`, terminal `/**`, overlapping permits, encoded characters, query strings, adjacent protected paths, and rejected URI-variable/regex/relative/mid-`**` patterns. Both stacks consume the same compiled pattern model described in [contracts/security.md](./contracts/security.md).
@@ -139,8 +139,8 @@ Run:
 
 ```bash
 ./gradlew :logistics-parent-service-autoconfigure:test --tests '*Tracing*'
-./gradlew :logistics-parent-service-autoconfigure:mvcIntegrationTest --tests '*Trace*'
-./gradlew :logistics-parent-service-autoconfigure:webfluxIntegrationTest --tests '*Trace*'
+./gradlew :logistics-parent-service-autoconfigure:mvcIntegrationTest --tests '*Tracing*'
+./gradlew :logistics-parent-service-autoconfigure:webfluxIntegrationTest --tests '*Tracing*'
 ```
 
 Verify four controlled modes:
@@ -216,3 +216,9 @@ Before release, inspect the change set and confirm:
 ## Expected Completion Result
 
 All commands pass locally with JDK 21, both integration suites demonstrate equivalent external behavior, the nonselected stack is absent from each fixture, and the complete `check` task provides the release evidence required by the constitution.
+
+## Validation Notes
+
+The release validation on 2026-08-21 found and corrected the web-stack public-endpoint filters above: the endpoint assertions live in `MvcSecurityIntegrationTest` and `WebFluxSecurityIntegrationTest`, so `*PublicEndpoint*` matched no test class. The focused replacement `*Security*` executes the complete security/public-endpoint suites. The same validation corrected the tracing filters from `*Trace*` to `*Tracing*`, matching `MvcTracingIntegrationTest` and `WebFluxTracingIntegrationTest`.
+
+The validation host used Java 17 as the Gradle launcher JVM, while Gradle selected the configured Java 21 toolchain for compilation, tests, and bytecode. Consumer services still require Java 21 as stated in the prerequisites and project constitution.

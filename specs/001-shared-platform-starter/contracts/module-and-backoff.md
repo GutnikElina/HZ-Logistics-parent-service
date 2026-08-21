@@ -83,3 +83,12 @@ Back-off is observable through Spring's condition evaluation report and tests. D
 ## Compatibility
 
 Changing module responsibilities, dependency direction, back-off triggers, supported bean types, selected-stack behavior, or the Spring Boot/Java baseline requires explicit compatibility review, Semantic Versioning classification, migration notes, and dependency/context regression tests.
+
+## Release regression evidence and migration note
+
+`BomAlignmentTest`, `StarterDependencyContractTest`,
+`AutoConfigurationSelectionTest`, `CapabilityBackOffTest`, the starter
+runtime dependency report, and the full `check` gate verify the three-module
+boundary and independent back-off. Consumer migration is one enforced BOM plus
+one starter; web applications select MVC or WebFlux themselves, and no fourth
+platform module or alternate starter is supported.

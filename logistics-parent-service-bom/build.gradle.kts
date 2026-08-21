@@ -48,8 +48,8 @@ dependencies {
         api("$projectGroup:logistics-parent-service-autoconfigure:$platformVersion")
         api("$projectGroup:logistics-parent-service-starter:$platformVersion")
 
-        api("org.jetbrains.kotlin:kotlin-stdlib")
-        api("org.jetbrains.kotlin:kotlin-test")
+        api("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
+        api("org.jetbrains.kotlin:kotlin-test:$kotlinVersion")
         api("org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlinVersion")
 
         api("org.springframework.boot:spring-boot")

@@ -167,12 +167,12 @@ description: "Actionable implementation tasks for the shared platform starter"
 
 **Purpose**: Close the release gate, document adoption, and record compatibility/scope evidence required by the constitution.
 
-- [ ] T069 [P] Document the one-BOM/one-starter adoption model, MVC/WebFlux selection, canonical configuration, override points, and logging/redaction guarantees in `README.md`
-- [ ] T070 [P] Add the feature's compatibility review, Semantic Versioning assessment, stable-contract inventory, and migration-note policy in `specs/001-shared-platform-starter/compatibility-review.md`
-- [ ] T071 Run the full `./gradlew clean check` release gate and resolve compilation, skipped-suite, dependency-alignment, and selected-web-stack failures in `build.gradle.kts`, `logistics-parent-service-autoconfigure/build.gradle.kts`, and affected source/test files
-- [ ] T072 Run every focused command and acceptance scenario in `specs/001-shared-platform-starter/quickstart.md`, recording any fixture or documentation corrections in `specs/001-shared-platform-starter/quickstart.md`
-- [ ] T073 Review the final source tree against the three-module and shared-infrastructure boundaries and remove or correct any domain model, persistence, service endpoint, forced web dependency, alternate namespace, or fourth-module artifact in `settings.gradle.kts`, `logistics-parent-service-bom/`, `logistics-parent-service-autoconfigure/`, and `logistics-parent-service-starter/`
-- [ ] T074 Verify all compatibility-sensitive configuration, security, trace, error, logging, redaction, and module contracts have regression evidence and migration notes before release in `specs/001-shared-platform-starter/contracts/`, `specs/001-shared-platform-starter/compatibility-review.md`, and `README.md`
+- [X] T069 [P] Document the one-BOM/one-starter adoption model, MVC/WebFlux selection, canonical configuration, override points, and logging/redaction guarantees in `README.md`
+- [X] T070 [P] Add the feature's compatibility review, Semantic Versioning assessment, stable-contract inventory, and migration-note policy in `specs/001-shared-platform-starter/compatibility-review.md`
+- [X] T071 Run the full `./gradlew clean check` release gate and resolve compilation, skipped-suite, dependency-alignment, and selected-web-stack failures in `build.gradle.kts`, `logistics-parent-service-autoconfigure/build.gradle.kts`, and affected source/test files
+- [X] T072 Run every focused command and acceptance scenario in `specs/001-shared-platform-starter/quickstart.md`, recording any fixture or documentation corrections in `specs/001-shared-platform-starter/quickstart.md`
+- [X] T073 Review the final source tree against the three-module and shared-infrastructure boundaries and remove or correct any domain model, persistence, service endpoint, forced web dependency, alternate namespace, or fourth-module artifact in `settings.gradle.kts`, `logistics-parent-service-bom/`, `logistics-parent-service-autoconfigure/`, and `logistics-parent-service-starter/`
+- [X] T074 Verify all compatibility-sensitive configuration, security, trace, error, logging, redaction, and module contracts have regression evidence and migration notes before release in `specs/001-shared-platform-starter/contracts/`, `specs/001-shared-platform-starter/compatibility-review.md`, and `README.md`
 
 ---
 

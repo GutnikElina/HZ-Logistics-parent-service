@@ -119,3 +119,12 @@ For each corpus item, capture console JSON and controlled OpenTelemetry log reco
 ## Compatibility
 
 JSON field names, default format, correlation semantics, baseline sensitive categories, redaction timing, mask semantics, application selectors, appender coordinate, or logging back-off behavior require explicit compatibility review, Semantic Versioning classification, migration notes, and corpus/runtime regression tests.
+
+## Release regression evidence and migration note
+
+`LoggingRedactionTest` and `LoggingRuntimeCompatibilityTest` prove that the
+same sanitized event reaches console and OpenTelemetry sinks, including nested
+throwables and the configured sensitive corpus. `CapabilityBackOffTest` covers
+logging-only override behavior. A custom sanitizer or logging resource is a
+compatible migration only when baseline redaction and correlation remain
+intact.

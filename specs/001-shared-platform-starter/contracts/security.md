@@ -106,3 +106,13 @@ Both stack suites must use mock JWTs and controlled decoders to prove:
 ## Compatibility
 
 Default access policy, issuer behavior, public pattern grammar, role mapping, prefix semantics, error shape, back-off trigger, or web-stack equivalence changes require explicit compatibility review, migration notes, Semantic Versioning classification, and both-stack regression evidence.
+
+## Release regression evidence and migration note
+
+Regression evidence is provided by `PublicEndpointPatternTest`,
+`RoleClaimsAuthorityMapperTest`, `IssuerValidationTest`,
+`PlatformJwtAuthenticationConverterTest`, `SecurityAutoConfigurationContextTest`,
+`MvcSecurityIntegrationTest`, and `WebFluxSecurityIntegrationTest`. A service
+that replaces the default chain must retain its required authorization policy;
+the initial migration only adds the BOM/starter and canonical issuer/role
+settings.
