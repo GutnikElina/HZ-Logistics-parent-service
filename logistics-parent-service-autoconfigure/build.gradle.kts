@@ -65,6 +65,7 @@ val customTestSourceSets = listOf(
 val customTestTasks = customTestSourceSets.map { sourceSetName ->
     val sourceSet = sourceSets.create(sourceSetName) {
         compileClasspath += sourceSets["main"].output
+        runtimeClasspath += sourceSets["main"].output
         // Suites may share fixture classes, but must not inherit the unit test
         // runtime: it deliberately contains both web APIs for condition tests.
         compileClasspath += sourceSets["test"].output
@@ -110,6 +111,7 @@ dependencies {
     }
     add("mvcIntegrationTestImplementation", "org.springframework.boot:spring-boot-webmvc-test")
     add("mvcIntegrationTestImplementation", "org.springframework.security:spring-security-test")
+    add("mvcIntegrationTestImplementation", "com.fasterxml.jackson.core:jackson-databind")
     add("mvcIntegrationTestRuntimeOnly", "org.junit.platform:junit-platform-launcher")
     add("webfluxIntegrationTestImplementation", project(":logistics-parent-service-starter"))
     add("webfluxIntegrationTestImplementation", "org.springframework.boot:spring-boot-starter-webflux")
@@ -120,6 +122,7 @@ dependencies {
         exclude(group = "org.mockito", module = "mockito-junit-jupiter")
     }
     add("webfluxIntegrationTestImplementation", "org.springframework.security:spring-security-test")
+    add("webfluxIntegrationTestImplementation", "com.fasterxml.jackson.core:jackson-databind")
     add("webfluxIntegrationTestRuntimeOnly", "org.junit.platform:junit-platform-launcher")
 
     testImplementation("org.springframework:spring-webmvc")
