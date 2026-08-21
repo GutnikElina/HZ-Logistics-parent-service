@@ -20,6 +20,8 @@ open class PlatformCorrelationContext(
     private val fallbackTraceIdSupplier: () -> String = ::newTraceId,
 ) {
 
+    private val executionFallbackTraceId = ThreadLocal<String>()
+
     /**
      * Retains the lightweight constructor used by direct consumers and tests.
      * Auto-configuration instead uses the provider constructor so this shared
@@ -52,10 +54,39 @@ open class PlatformCorrelationContext(
      * Return the current trace ID or create a valid local correlation value
      * when tracing has not been established yet.
      */
-    open fun traceIdOrCreate(): String =
-        currentTraceId() ?: fallbackTraceIdSupplier()
+    open fun traceIdOrCreate(): String {
+        currentTraceId()?.let { return it }
+        executionFallbackTraceId.get()?.let { return it }
+
+        val fallback = fallbackTraceIdSupplier()
             .normaliseW3cId(TRACE_ID_LENGTH)
             ?: newTraceId()
+        executionFallbackTraceId.set(fallback)
+        return fallback
+    }
+
+    /**
+     * Start an execution-scoped fallback correlation value. The scope is
+     * deliberately explicit so request adapters can clear it at their
+     * boundary and a reused worker thread cannot leak a prior request ID.
+     */
+    open fun beginExecutionScope(): String = traceIdOrCreate()
+
+    /** Clear the fallback value associated with the current execution. */
+    open fun endExecutionScope() {
+        executionFallbackTraceId.remove()
+    }
+
+    /** Run [block] with one fallback ID and restore the previous scope. */
+    open fun <T> withExecutionScope(block: () -> T): T {
+        val previous = executionFallbackTraceId.get()
+        beginExecutionScope()
+        return try {
+            block()
+        } finally {
+            if (previous == null) executionFallbackTraceId.remove() else executionFallbackTraceId.set(previous)
+        }
+    }
 
     /** Alias that reads naturally at error and logging call sites. */
     open fun requiredTraceId(): String = traceIdOrCreate()

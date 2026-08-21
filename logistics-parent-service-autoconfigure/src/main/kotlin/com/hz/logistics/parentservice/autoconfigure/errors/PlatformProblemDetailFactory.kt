@@ -142,6 +142,8 @@ open class PlatformProblemDetailFactory(
         .replace(SENSITIVE_ASSIGNMENT_PATTERN) { match ->
             "${match.groupValues[1]}=$REDACTION_MASK"
         }
+        .replace(STACK_TRACE_PATTERN, REDACTION_MASK)
+        .replace(EXCEPTION_CLASS_PATTERN, REDACTION_MASK)
 
     private fun sanitizeRequestPath(requestPath: String?): URI? {
         val value = requestPath?.trim().orEmpty()
@@ -211,6 +213,10 @@ open class PlatformProblemDetailFactory(
             Regex("(?<![A-Za-z0-9_-])eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+(?![A-Za-z0-9_-])")
         private val SENSITIVE_ASSIGNMENT_PATTERN = Regex(
             "(?i)\\b(password|passwd|pwd|authorization|access[-_.]?token|refresh[-_.]?token|id[-_.]?token|token|secret|client[-_.]?secret|api[-_.]?key)\\s*[:=]\\s*([^\\s,;]+)",
+        )
+        private val STACK_TRACE_PATTERN = Regex("(?m)^\\s*(?:at\\s+.*|Caused by:.*|Suppressed:.*)$")
+        private val EXCEPTION_CLASS_PATTERN = Regex(
+            "(?<![A-Za-z0-9_$])(?:[a-z_][A-Za-z0-9_$]*\\.)+[A-Z][A-Za-z0-9_$]*(?:Exception|Error|Throwable)(?![A-Za-z0-9_$])",
         )
     }
 }

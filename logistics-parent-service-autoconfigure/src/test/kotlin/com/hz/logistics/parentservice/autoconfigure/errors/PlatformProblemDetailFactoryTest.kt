@@ -109,6 +109,39 @@ class PlatformProblemDetailFactoryTest {
         assertThat(redacted).contains(PlatformProblemDetailFactory.REDACTION_MASK)
     }
 
+    @Test
+    fun `safe policy removes exception class and stack content`() {
+        val safeProperties = ErrorProperties().apply {
+            detailPolicy = ErrorProperties.DetailPolicy.SAFE
+        }
+        val factory = PlatformProblemDetailFactory(
+            PlatformCorrelationContext(fallbackTraceIdSupplier = TRACE_ID_SUPPLIER),
+            safeProperties,
+        )
+
+        val detail = "java.lang.IllegalStateException: leaked\n    at com.hz.logistics.SecretController.handle(SecretController.kt:42)"
+        val sanitized = factory.createSafe(HttpStatus.INTERNAL_SERVER_ERROR, "/failure", detail).detail
+
+        assertThat(sanitized)
+            .doesNotContain("java.lang.IllegalStateException", "at com.hz.logistics.SecretController.handle")
+            .contains(PlatformProblemDetailFactory.REDACTION_MASK)
+    }
+
+    @Test
+    fun `fallback correlation is stable inside a scope and cleared at its boundary`() {
+        val correlation = PlatformCorrelationContext(fallbackTraceIdSupplier = TRACE_ID_SUPPLIER)
+        val factory = PlatformProblemDetailFactory(correlation)
+
+        correlation.withExecutionScope {
+            val first = factory.internalError().properties.orEmpty()[PlatformProblemDetailFactory.TRACE_ID_PROPERTY]
+            val second = correlation.requiredTraceId()
+            assertThat(second).isEqualTo(first)
+        }
+
+        assertThat(correlation.requiredTraceId()).isEqualTo(TRACE_ID_SUPPLIER())
+        correlation.endExecutionScope()
+    }
+
     companion object {
         private val TRACE_ID_SUPPLIER = { "cccccccccccccccccccccccccccccccc" }
     }

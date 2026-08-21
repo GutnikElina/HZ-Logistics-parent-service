@@ -287,8 +287,8 @@ Task: T058 independent capability back-off tests
 
 ## Phase 9: Convergence
 
-- [ ] T077 Preserve one valid execution-scoped fallback trace ID across ProblemDetail creation and structured diagnostic logging without leaking it between requests, per T-012 / FR-010 / FR-012 / contracts: observability correlation (partial)
-- [ ] T078 Harden `PlatformProblemDetailFactory` detail sanitization so SAFE and generic responses cannot expose passwords, tokens, secrets, JWT material, exception class names, or stack content before serialization, per T-013 / FR-013 / contracts: ProblemDetail detail policy (partial)
+- [X] T077 Preserve one valid execution-scoped fallback trace ID across ProblemDetail creation and structured diagnostic logging without leaking it between requests, per T-012 / FR-010 / FR-012 / contracts: observability correlation (partial)
+- [X] T078 Harden `PlatformProblemDetailFactory` detail sanitization so SAFE and generic responses cannot expose passwords, tokens, secrets, JWT material, exception class names, or stack content before serialization, per T-013 / FR-013 / contracts: ProblemDetail detail policy (partial)
 
 ## Phase 10: Convergence
 
