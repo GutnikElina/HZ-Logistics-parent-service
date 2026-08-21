@@ -51,6 +51,7 @@ dependencies {
         exclude(group = "org.mockito", module = "mockito-junit-jupiter")
     }
     testImplementation("org.springframework.security:spring-security-test")
+    testImplementation("jakarta.servlet:jakarta.servlet-api")
     testImplementation("org.springframework:spring-web")
     testImplementation("org.springframework:spring-webflux")
     testImplementation("com.fasterxml.jackson.core:jackson-databind")

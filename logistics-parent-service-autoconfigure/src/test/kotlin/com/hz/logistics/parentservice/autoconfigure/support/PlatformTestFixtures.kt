@@ -65,9 +65,9 @@ object PlatformTestFixtures {
     )
 
     fun managedClientBuilders(
-        restClient: RestClient.Builder = RestClient.builder(),
-        webClient: WebClient.Builder = WebClient.builder(),
-    ): ManagedClientBuilders = ManagedClientBuilders(restClient, webClient)
+        restClientBuilder: RestClient.Builder,
+        webClientBuilder: WebClient.Builder,
+    ): ManagedClientBuilders = ManagedClientBuilders(restClientBuilder, webClientBuilder)
 
     fun simpleMeterRegistry(): SimpleMeterRegistry = SimpleMeterRegistry()
 

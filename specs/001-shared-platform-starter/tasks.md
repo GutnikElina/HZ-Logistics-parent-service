@@ -292,7 +292,7 @@ Task: T058 independent capability back-off tests
 
 ## Phase 10: Convergence
 
-- [ ] T079 Require context-managed `RestClient.Builder` and `WebClient.Builder` inputs in the reusable fixture and add coverage preventing raw default builders from bypassing tracing instrumentation per plan: managed outbound clients (partial)
+- [X] T079 Require context-managed `RestClient.Builder` and `WebClient.Builder` inputs in the reusable fixture and add coverage preventing raw default builders from bypassing tracing instrumentation per plan: managed outbound clients (partial)
 
 ---
 
