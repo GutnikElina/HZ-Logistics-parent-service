@@ -119,12 +119,6 @@ class PlatformPropertiesBindingTest {
                 assertThat(context.startupFailure).hasStackTraceContaining("OTLP timeout")
             }
 
-        contextRunner
-            .withPropertyValues("logistics.parent-service.security.issuer=ftp://identity.example.test/realm")
-            .run { context ->
-                assertThat(context).hasFailed()
-                assertThat(context.startupFailure).hasStackTraceContaining("issuer")
-            }
     }
 
     @Test

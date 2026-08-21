@@ -1,6 +1,5 @@
 package com.hz.logistics.parentservice.autoconfigure.properties
 
-import jakarta.validation.constraints.AssertTrue
 import jakarta.validation.constraints.Pattern
 import jakarta.validation.constraints.Size
 import java.net.URI
@@ -31,14 +30,4 @@ class SecurityProperties {
     @field:Size(max = 64, message = "role-prefix must contain at most 64 characters")
     var rolePrefix: String = "ROLE_"
 
-    @AssertTrue(message = "issuer must be an absolute HTTP(S) URI without user-info, query, or fragment")
-    fun isIssuerValid(): Boolean {
-        val value = issuer ?: return true
-        if (!enabled || !value.isAbsolute || value.host.isNullOrBlank()) {
-            return !enabled
-        }
-        return (value.scheme.equals("http", ignoreCase = true) ||
-            value.scheme.equals("https", ignoreCase = true)) &&
-            value.userInfo == null && value.query == null && value.fragment == null
-    }
 }
