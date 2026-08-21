@@ -11,6 +11,10 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
 import org.springframework.context.annotation.Import
+import org.springframework.context.annotation.Bean
+import org.springframework.security.config.annotation.web.builders.HttpSecurity
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
+import org.springframework.security.web.SecurityFilterChain
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.web.bind.annotation.GetMapping
@@ -109,8 +113,15 @@ class MvcTracingIntegrationTest {
 
 @SpringBootConfiguration(proxyBeanMethods = false)
 @EnableAutoConfiguration
+@EnableWebSecurity
 @Import(MvcTracingFixtureController::class)
-class MvcTracingFixtureApplication
+class MvcTracingFixtureApplication {
+
+    /** Tracing acceptance is independent of the platform security contract. */
+    @Bean
+    fun applicationSecurityFilterChain(http: HttpSecurity): SecurityFilterChain =
+        http.authorizeHttpRequests { it.anyRequest().permitAll() }.build()
+}
 
 @RestController
 class MvcTracingFixtureController(

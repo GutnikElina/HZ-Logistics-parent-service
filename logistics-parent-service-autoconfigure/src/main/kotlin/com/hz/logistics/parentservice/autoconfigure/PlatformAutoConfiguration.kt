@@ -3,6 +3,7 @@ package com.hz.logistics.parentservice.autoconfigure
 import com.hz.logistics.parentservice.autoconfigure.errors.PlatformProblemDetailFactory
 import com.hz.logistics.parentservice.autoconfigure.observability.PlatformCorrelationContext
 import com.hz.logistics.parentservice.autoconfigure.properties.PlatformProperties
+import com.hz.logistics.parentservice.autoconfigure.tracing.PlatformTracingAutoConfiguration
 import io.micrometer.tracing.Tracer
 import org.springframework.beans.factory.ObjectProvider
 import org.springframework.boot.autoconfigure.AutoConfiguration
@@ -12,6 +13,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Import
 import org.springframework.core.Ordered
 
 /**
@@ -33,6 +35,7 @@ import org.springframework.core.Ordered
     ],
 )
 @EnableConfigurationProperties(PlatformProperties::class)
+@Import(PlatformTracingAutoConfiguration::class)
 class PlatformAutoConfiguration {
 
     /**
@@ -42,7 +45,7 @@ class PlatformAutoConfiguration {
     @Bean
     @ConditionalOnMissingBean
     fun platformCorrelationContext(tracerProvider: ObjectProvider<Tracer>): PlatformCorrelationContext =
-        PlatformCorrelationContext(tracerProvider.getIfAvailable())
+        PlatformCorrelationContext(tracerProvider)
 
     /**
      * The shared factory is eligible outside web applications. Stack-specific

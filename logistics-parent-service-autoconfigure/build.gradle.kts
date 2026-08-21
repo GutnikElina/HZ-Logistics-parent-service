@@ -20,6 +20,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-security")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-opentelemetry")
+    // The starter supplies Boot's SDK auto-configuration. These two optional
+    // implementation artifacts are required only because this module exposes
+    // its canonical W3C/OTLP settings through Boot's supported tracing SPI.
+    implementation("io.micrometer:micrometer-tracing-bridge-otel")
+    implementation("io.opentelemetry:opentelemetry-exporter-otlp")
     implementation("org.springframework.security:spring-security-core")
     implementation("org.springframework.security:spring-security-oauth2-jose")
     implementation("org.springframework.security:spring-security-oauth2-resource-server")

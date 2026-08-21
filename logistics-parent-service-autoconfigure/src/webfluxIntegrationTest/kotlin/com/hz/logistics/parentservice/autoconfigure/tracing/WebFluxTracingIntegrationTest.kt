@@ -11,7 +11,11 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.context.SpringBootTest.WebEnvironment
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.context.annotation.Import
+import org.springframework.context.annotation.Bean
 import org.springframework.http.HttpHeaders
+import org.springframework.security.config.web.server.ServerHttpSecurity
+import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
+import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.web.reactive.server.WebTestClient
@@ -115,8 +119,15 @@ class WebFluxTracingIntegrationTest {
 
 @SpringBootConfiguration(proxyBeanMethods = false)
 @EnableAutoConfiguration
+@EnableWebFluxSecurity
 @Import(WebFluxTracingFixtureController::class)
-class WebFluxTracingFixtureApplication
+class WebFluxTracingFixtureApplication {
+
+    /** Tracing acceptance is independent of the platform security contract. */
+    @Bean
+    fun applicationSecurityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain =
+        http.authorizeExchange { it.anyExchange().permitAll() }.build()
+}
 
 @RestController
 class WebFluxTracingFixtureController(

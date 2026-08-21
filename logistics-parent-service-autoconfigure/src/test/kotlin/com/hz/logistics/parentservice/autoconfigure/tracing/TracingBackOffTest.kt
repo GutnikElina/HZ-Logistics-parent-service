@@ -6,6 +6,7 @@ import com.hz.logistics.parentservice.autoconfigure.observability.PlatformCorrel
 import com.hz.logistics.parentservice.autoconfigure.security.mvc.PlatformMvcSecurityAutoConfiguration
 import com.hz.logistics.parentservice.autoconfigure.security.reactive.PlatformWebFluxSecurityAutoConfiguration
 import io.opentelemetry.api.OpenTelemetry
+import io.opentelemetry.sdk.trace.SdkTracerProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory
@@ -70,6 +71,19 @@ class TracingBackOffTest {
             }
     }
 
+    @Test
+    fun `an application owned tracer provider also backs off only platform tracing`() {
+        ApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(PlatformAutoConfiguration::class.java))
+            .withUserConfiguration(ApplicationOwnedTracerProvider::class.java)
+            .run { context ->
+                assertThat(context).hasNotFailed()
+                assertThat(context).hasSingleBean(SdkTracerProvider::class.java)
+                assertThat(context).hasSingleBean(PlatformProblemDetailFactory::class.java)
+                assertThat(context).doesNotHaveBean("platformW3cContextPropagators")
+            }
+    }
+
     private fun tracingConfigurationMatched(beanFactory: ConfigurableListableBeanFactory): Boolean =
         ConditionEvaluationReport.get(beanFactory)
             .conditionAndOutcomesBySource[TRACING_AUTO_CONFIGURATION]
@@ -81,6 +95,13 @@ class TracingBackOffTest {
 
         @Bean
         fun applicationOpenTelemetry(): OpenTelemetry = OpenTelemetry.noop()
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    class ApplicationOwnedTracerProvider {
+
+        @Bean
+        fun applicationTracerProvider(): SdkTracerProvider = SdkTracerProvider.builder().build()
     }
 
     private companion object {

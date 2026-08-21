@@ -119,12 +119,12 @@ description: "Actionable implementation tasks for the shared platform starter"
 
 ### Implementation for User Story 3
 
-- [ ] T046 [US3] Integrate Spring Boot's `spring-boot-starter-opentelemetry` auto-configuration with the platform tracing properties, W3C propagation, configured sampling, managed-client instrumentation, and tracing-only conditions in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/PlatformTracingAutoConfiguration.kt`
-- [ ] T047 [US3] Map canonical OTLP endpoint/protocol/header/timeout/compression settings to Spring Boot's supported OTLP configuration/customizers, preserving batch/asynchronous export and diagnostic-only exporter failure handling in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/OtlpTracingCustomizer.kt`
-- [ ] T048 [US3] Implement W3C propagator registration and invalid-carrier handling so malformed inbound context starts a new safe trace without failing request processing in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/W3cPropagationConfigurer.kt`
-- [ ] T049 [US3] Implement trace/span MDC correlation and error-time fallback correlation using the shared context abstraction in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/TraceCorrelationConfigurer.kt`
-- [ ] T050 [US3] Implement supported reactive context propagation across Reactor scheduling boundaries without attaching stale thread-local context in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/ReactiveTraceContextBridge.kt`
-- [ ] T051 [US3] Register tracing auto-configuration after shared properties and before logging/error adapters in `logistics-parent-service-autoconfigure/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`
+- [X] T046 [US3] Integrate Spring Boot's `spring-boot-starter-opentelemetry` auto-configuration with the platform tracing properties, W3C propagation, configured sampling, managed-client instrumentation, and tracing-only conditions in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/PlatformTracingAutoConfiguration.kt`
+- [X] T047 [US3] Map canonical OTLP endpoint/protocol/header/timeout/compression settings to Spring Boot's supported OTLP configuration/customizers, preserving batch/asynchronous export and diagnostic-only exporter failure handling in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/OtlpTracingCustomizer.kt`
+- [X] T048 [US3] Implement W3C propagator registration and invalid-carrier handling so malformed inbound context starts a new safe trace without failing request processing in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/W3cPropagationConfigurer.kt`
+- [X] T049 [US3] Implement trace/span MDC correlation and error-time fallback correlation using the shared context abstraction in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/TraceCorrelationConfigurer.kt`
+- [X] T050 [US3] Implement supported reactive context propagation across Reactor scheduling boundaries without attaching stale thread-local context in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/tracing/ReactiveTraceContextBridge.kt`
+- [X] T051 [US3] Register tracing auto-configuration after shared properties and before logging/error adapters in `logistics-parent-service-autoconfigure/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`
 
 **Checkpoint**: Valid W3C context is continued and injected into managed clients in both stacks; absent or invalid context is safely replaced; OTLP is optional, asynchronous, and non-blocking.
 
@@ -317,3 +317,8 @@ Task: T058 independent capability back-off tests
 - [ ] T090 Add separate no-`traceparent` assertions that prove MVC and WebFlux start and propagate a fresh valid trace, including the Reactor scheduler boundary, per T043 / T044 / FR-009 / US3/AC4 (partial)
 - [ ] T091 Add enabled-tracing positive controls, then prove tracing disablement and an application-owned `OpenTelemetry` instance alone back off platform tracing while other capability beans remain eligible per T045 / FR-017 (partial)
 - [ ] T092 Turn OTLP configuration coverage into exporter-behavior tests proving canonical HTTP/gRPC endpoint, protocol, headers, timeout, compression, sampling, absent-exporter, and non-blocking delayed-collector semantics per T042 / FR-010 (partial)
+
+## Phase 14: Convergence
+
+- [ ] T093 CRITICAL Wire the shared `PlatformProblemDetailFactory` and `TraceCorrelationConfigurer` fallback into MVC and WebFlux unhandled-error handling so an inbound trace produces the same non-empty `traceId` in the RFC 7807 response on both stacks, while preserving independent handler back-off, per T049 / FR-012 / Constitution V (partial)
+- [ ] T094 Remove or explicitly justify and order-test the direct `@Import(PlatformTracingAutoConfiguration::class)` in `PlatformAutoConfiguration`, leaving `AutoConfiguration.imports` as the single registration path for tracing, per T051 / plan: auto-configuration registration (unrequested)

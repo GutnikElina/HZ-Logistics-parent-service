@@ -1,6 +1,7 @@
 package com.hz.logistics.parentservice.autoconfigure.observability
 
 import io.micrometer.tracing.Tracer
+import org.springframework.beans.factory.ObjectProvider
 import java.security.SecureRandom
 import java.util.Locale
 
@@ -15,9 +16,25 @@ import java.util.Locale
  * before tracing has established a span.
  */
 open class PlatformCorrelationContext(
-    private val tracer: Tracer? = null,
+    private val tracerProvider: () -> Tracer? = { null },
     private val fallbackTraceIdSupplier: () -> String = ::newTraceId,
 ) {
+
+    /**
+     * Retains the lightweight constructor used by direct consumers and tests.
+     * Auto-configuration instead uses the provider constructor so this shared
+     * object can observe the Boot-created tracer after context startup.
+     */
+    constructor(
+        tracer: Tracer?,
+        fallbackTraceIdSupplier: () -> String = ::newTraceId,
+    ) : this({ tracer }, fallbackTraceIdSupplier)
+
+    /** Resolve the tracer lazily to avoid an early auto-configuration cycle. */
+    constructor(
+        tracerProvider: ObjectProvider<Tracer>,
+        fallbackTraceIdSupplier: () -> String = ::newTraceId,
+    ) : this(tracerProvider::getIfAvailable, fallbackTraceIdSupplier)
 
     /** The current valid W3C trace ID, or `null` when no trace is active. */
     open fun currentTraceId(): String? = currentTraceContext()?.traceId()?.normaliseW3cId(TRACE_ID_LENGTH)
@@ -57,7 +74,7 @@ open class PlatformCorrelationContext(
     )
 
     private fun currentTraceContext() =
-        runCatching { tracer?.currentSpan()?.context() }.getOrNull()
+        runCatching { tracerProvider()?.currentSpan()?.context() }.getOrNull()
 
     companion object {
         private const val TRACE_ID_LENGTH = 32
