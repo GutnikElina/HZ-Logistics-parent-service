@@ -282,8 +282,8 @@ Task: T058 independent capability back-off tests
 
 ## Phase 8: Convergence
 
-- [ ] T075 Complete the shared auto-configuration registration, capability enablement conditions, and ordering contract so each bound capability flag is effective independently and add context coverage for disabled-capability back-off per T-011 / FR-016 / plan: capability enablement and import ordering (partial)
-- [ ] T076 Strengthen configuration metadata coverage to assert every canonical group and public property has its exact type, description, and default semantics, including nullable and empty-collection defaults, per T-010 / FR-016 / plan: configuration metadata (partial)
+- [X] T075 Complete the shared auto-configuration registration, capability enablement conditions, and ordering contract so each bound capability flag is effective independently and add context coverage for disabled-capability back-off per T-011 / FR-016 / plan: capability enablement and import ordering (partial)
+- [X] T076 Strengthen configuration metadata coverage to assert every canonical group and public property has its exact type, description, and default semantics, including nullable and empty-collection defaults, per T-010 / FR-016 / plan: configuration metadata (partial)
 
 ## Phase 9: Convergence
 

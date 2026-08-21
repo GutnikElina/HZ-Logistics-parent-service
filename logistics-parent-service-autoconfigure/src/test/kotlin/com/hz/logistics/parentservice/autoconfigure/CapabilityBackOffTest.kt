@@ -12,10 +12,90 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
+import org.springframework.boot.test.context.runner.WebApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.security.web.SecurityFilterChain
+import org.springframework.web.cors.CorsConfigurationSource
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource
 
 class CapabilityBackOffTest {
+
+    @Test
+    fun disabledTracingBacksOffOnlyTracing() {
+        runner()
+            .withPropertyValues("logistics.parent-service.tracing.enabled=false")
+            .run { context ->
+                assertThat(context).hasNotFailed()
+                assertThat(context).doesNotHaveBean("platformTracingSampler")
+                assertThat(context).hasSingleBean(PlatformMetricsCustomizer::class.java)
+                assertThat(context).hasSingleBean(PlatformProblemDetailFactory::class.java)
+                assertThat(context).hasSingleBean(PlatformLogSanitizer::class.java)
+                assertThat(context).hasSingleBean(PlatformCorrelationContext::class.java)
+            }
+    }
+
+    @Test
+    fun disabledMetricsBacksOffOnlyMetrics() {
+        runner()
+            .withPropertyValues("logistics.parent-service.metrics.enabled=false")
+            .run { context ->
+                assertThat(context).hasNotFailed()
+                assertThat(context).doesNotHaveBean(PlatformMetricsCustomizer::class.java)
+                assertThat(context).hasBean("platformTracingSampler")
+                assertThat(context).hasSingleBean(PlatformProblemDetailFactory::class.java)
+                assertThat(context).hasSingleBean(PlatformLogSanitizer::class.java)
+                assertThat(context).hasSingleBean(PlatformCorrelationContext::class.java)
+            }
+    }
+
+    @Test
+    fun disabledErrorsBacksOffOnlyErrors() {
+        runner()
+            .withPropertyValues("logistics.parent-service.errors.enabled=false")
+            .run { context ->
+                assertThat(context).hasNotFailed()
+                assertThat(context).doesNotHaveBean(PlatformProblemDetailFactory::class.java)
+                assertThat(context).hasBean("platformTracingSampler")
+                assertThat(context).hasSingleBean(PlatformMetricsCustomizer::class.java)
+                assertThat(context).hasSingleBean(PlatformLogSanitizer::class.java)
+                assertThat(context).hasSingleBean(PlatformCorrelationContext::class.java)
+            }
+    }
+
+    @Test
+    fun disabledLoggingBacksOffOnlyLogging() {
+        runner()
+            .withPropertyValues("logistics.parent-service.logging.enabled=false")
+            .run { context ->
+                assertThat(context).hasNotFailed()
+                assertThat(context).doesNotHaveBean(PlatformLogSanitizer::class.java)
+                assertThat(context).doesNotHaveBean("platformLoggingPipeline")
+                assertThat(context).hasBean("platformTracingSampler")
+                assertThat(context).hasSingleBean(PlatformMetricsCustomizer::class.java)
+                assertThat(context).hasSingleBean(PlatformProblemDetailFactory::class.java)
+                assertThat(context).hasSingleBean(PlatformCorrelationContext::class.java)
+            }
+    }
+
+    @Test
+    fun disabledSecurityBacksOffOnlySelectedSecurityBranch() {
+        WebApplicationContextRunner()
+            .withUserConfiguration(PlatformCapabilityTestApplication::class.java)
+            .withPropertyValues(
+                "spring.main.web-application-type=servlet",
+                "logistics.parent-service.security.enabled=false",
+            )
+            .run { context ->
+                assertThat(context).hasNotFailed()
+                assertThat(context).doesNotHaveBean("platformMvcSecurityFilterChain")
+                assertThat(context).hasBean("platformTracingSampler")
+                assertThat(context).hasSingleBean(PlatformMetricsCustomizer::class.java)
+                assertThat(context).hasSingleBean(PlatformProblemDetailFactory::class.java)
+                assertThat(context).hasSingleBean(PlatformLogSanitizer::class.java)
+                assertThat(context).hasSingleBean(PlatformCorrelationContext::class.java)
+            }
+    }
 
     @Test
     fun applicationMetricsOwnerLeavesErrorsLoggingAndCorrelationActive() {
@@ -87,6 +167,9 @@ class PlatformCapabilityTestApplication {
 
     @Bean
     fun applicationMeterRegistry(): SimpleMeterRegistry = SimpleMeterRegistry()
+
+    @Bean
+    fun corsConfigurationSource(): CorsConfigurationSource = UrlBasedCorsConfigurationSource()
 }
 
 @Configuration(proxyBeanMethods = false)
