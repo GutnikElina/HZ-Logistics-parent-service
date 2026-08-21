@@ -3,6 +3,10 @@ package com.hz.logistics.parentservice.autoconfigure.tracing
 import com.hz.logistics.parentservice.autoconfigure.PlatformAutoConfiguration
 import com.hz.logistics.parentservice.autoconfigure.errors.PlatformProblemDetailFactory
 import com.hz.logistics.parentservice.autoconfigure.observability.PlatformCorrelationContext
+import com.hz.logistics.parentservice.autoconfigure.logging.PlatformLogSanitizer
+import com.hz.logistics.parentservice.autoconfigure.metrics.PlatformMetricsCustomizer
+import com.hz.logistics.parentservice.autoconfigure.logging.PlatformLoggingAutoConfiguration
+import com.hz.logistics.parentservice.autoconfigure.metrics.PlatformMetricsAutoConfiguration
 import com.hz.logistics.parentservice.autoconfigure.security.mvc.PlatformMvcSecurityAutoConfiguration
 import com.hz.logistics.parentservice.autoconfigure.security.reactive.PlatformWebFluxSecurityAutoConfiguration
 import io.opentelemetry.api.OpenTelemetry
@@ -23,12 +27,21 @@ class TracingBackOffTest {
     @Test
     fun `tracing disablement leaves the shared correlation and error contracts eligible`() {
         ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(PlatformAutoConfiguration::class.java))
+            .withConfiguration(
+                AutoConfigurations.of(
+                    PlatformAutoConfiguration::class.java,
+                    PlatformTracingAutoConfiguration::class.java,
+                    PlatformMetricsAutoConfiguration::class.java,
+                    PlatformLoggingAutoConfiguration::class.java,
+                ),
+            )
             .withPropertyValues("logistics.parent-service.tracing.enabled=false")
             .run { context ->
                 assertThat(context).hasNotFailed()
                 assertThat(context).hasSingleBean(PlatformCorrelationContext::class.java)
                 assertThat(context).hasSingleBean(PlatformProblemDetailFactory::class.java)
+                assertThat(context).hasSingleBean(PlatformMetricsCustomizer::class.java)
+                assertThat(context).hasSingleBean(PlatformLogSanitizer::class.java)
                 assertThat(tracingConfigurationMatched(context.beanFactory)).isFalse()
             }
     }
@@ -39,6 +52,9 @@ class TracingBackOffTest {
             .withConfiguration(
                 AutoConfigurations.of(
                     PlatformAutoConfiguration::class.java,
+                    PlatformTracingAutoConfiguration::class.java,
+                    PlatformMetricsAutoConfiguration::class.java,
+                    PlatformLoggingAutoConfiguration::class.java,
                     PlatformMvcSecurityAutoConfiguration::class.java,
                     PlatformWebFluxSecurityAutoConfiguration::class.java,
                 ),
@@ -54,6 +70,8 @@ class TracingBackOffTest {
                 assertThat(context).hasNotFailed()
                 assertThat(context).hasSingleBean(SecurityFilterChain::class.java)
                 assertThat(context).hasSingleBean(PlatformProblemDetailFactory::class.java)
+                assertThat(context).hasSingleBean(PlatformMetricsCustomizer::class.java)
+                assertThat(context).hasSingleBean(PlatformLogSanitizer::class.java)
                 assertThat(tracingConfigurationMatched(context.beanFactory)).isFalse()
             }
     }
@@ -61,12 +79,21 @@ class TracingBackOffTest {
     @Test
     fun `an application owned OpenTelemetry instance backs off only platform tracing`() {
         ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(PlatformAutoConfiguration::class.java))
+            .withConfiguration(
+                AutoConfigurations.of(
+                    PlatformAutoConfiguration::class.java,
+                    PlatformTracingAutoConfiguration::class.java,
+                    PlatformMetricsAutoConfiguration::class.java,
+                    PlatformLoggingAutoConfiguration::class.java,
+                ),
+            )
             .withUserConfiguration(ApplicationOwnedOpenTelemetry::class.java)
             .run { context ->
                 assertThat(context).hasNotFailed()
                 assertThat(context).hasSingleBean(OpenTelemetry::class.java)
                 assertThat(context).hasSingleBean(PlatformProblemDetailFactory::class.java)
+                assertThat(context).hasSingleBean(PlatformMetricsCustomizer::class.java)
+                assertThat(context).hasSingleBean(PlatformLogSanitizer::class.java)
                 assertThat(context).doesNotHaveBean("platformW3cContextPropagators")
             }
     }
@@ -74,7 +101,14 @@ class TracingBackOffTest {
     @Test
     fun `an application owned tracer provider also backs off only platform tracing`() {
         ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(PlatformAutoConfiguration::class.java))
+            .withConfiguration(
+                AutoConfigurations.of(
+                    PlatformAutoConfiguration::class.java,
+                    PlatformTracingAutoConfiguration::class.java,
+                    PlatformMetricsAutoConfiguration::class.java,
+                    PlatformLoggingAutoConfiguration::class.java,
+                ),
+            )
             .withUserConfiguration(ApplicationOwnedTracerProvider::class.java)
             .run { context ->
                 assertThat(context).hasNotFailed()

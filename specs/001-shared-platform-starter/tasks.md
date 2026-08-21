@@ -312,11 +312,11 @@ Task: T058 independent capability back-off tests
 
 ## Phase 13: Convergence
 
-- [ ] T088 Add MVC and WebFlux structured-log capture assertions that verify the same inbound trace ID appears in the safe ProblemDetail and emitted JSON event per T043 / T044 / FR-009 / FR-012 / SC-003 (partial)
-- [ ] T089 Make the MVC and WebFlux rejecting-collector scenarios call the successful outbound endpoint and assert a 200 response plus a valid propagated header when OTLP export fails per T043 / T044 / FR-010 (partial)
-- [ ] T090 Add separate no-`traceparent` assertions that prove MVC and WebFlux start and propagate a fresh valid trace, including the Reactor scheduler boundary, per T043 / T044 / FR-009 / US3/AC4 (partial)
-- [ ] T091 Add enabled-tracing positive controls, then prove tracing disablement and an application-owned `OpenTelemetry` instance alone back off platform tracing while other capability beans remain eligible per T045 / FR-017 (partial)
-- [ ] T092 Turn OTLP configuration coverage into exporter-behavior tests proving canonical HTTP/gRPC endpoint, protocol, headers, timeout, compression, sampling, absent-exporter, and non-blocking delayed-collector semantics per T042 / FR-010 (partial)
+- [X] T088 Add MVC and WebFlux structured-log capture assertions that verify the same inbound trace ID appears in the safe ProblemDetail and emitted JSON event per T043 / T044 / FR-009 / FR-012 / SC-003 (partial)
+- [X] T089 Make the MVC and WebFlux rejecting-collector scenarios call the successful outbound endpoint and assert a 200 response plus a valid propagated header when OTLP export fails per T043 / T044 / FR-010 (partial)
+- [X] T090 Add separate no-`traceparent` assertions that prove MVC and WebFlux start and propagate a fresh valid trace, including the Reactor scheduler boundary, per T043 / T044 / FR-009 / US3/AC4 (partial)
+- [X] T091 Add enabled-tracing positive controls, then prove tracing disablement and an application-owned `OpenTelemetry` instance alone back off platform tracing while other capability beans remain eligible per T045 / FR-017 (partial)
+- [X] T092 Turn OTLP configuration coverage into exporter-behavior tests proving canonical HTTP/gRPC endpoint, protocol, headers, timeout, compression, sampling, absent-exporter, and non-blocking delayed-collector semantics per T042 / FR-010 (partial)
 
 ## Phase 14: Convergence
 

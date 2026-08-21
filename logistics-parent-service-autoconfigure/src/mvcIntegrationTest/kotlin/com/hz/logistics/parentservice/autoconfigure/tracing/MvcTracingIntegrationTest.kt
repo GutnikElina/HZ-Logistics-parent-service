@@ -17,6 +17,9 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.boot.test.system.CapturedOutput
+import org.springframework.boot.test.system.OutputCaptureExtension
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.client.RestClient
@@ -26,6 +29,7 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.Duration
+import org.slf4j.LoggerFactory
 
 @SpringBootTest(
     classes = [MvcTracingFixtureApplication::class],
@@ -36,6 +40,7 @@ import java.time.Duration
         "management.otlp.metrics.export.enabled=false",
     ],
 )
+@ExtendWith(OutputCaptureExtension::class)
 class MvcTracingIntegrationTest {
 
     @LocalServerPort
@@ -65,13 +70,25 @@ class MvcTracingIntegrationTest {
     }
 
     @Test
-    fun `correlates a platform problem response with the inbound trace and survives a rejecting exporter`() {
+    fun `correlates a platform problem response and JSON log with the inbound trace`(output: CapturedOutput) {
         exportCollector.reject()
 
         val response = request("/traces/failure", VALID_TRACE_PARENT)
 
         assertThat(response.statusCode()).isEqualTo(500)
         assertThat(response.body()).contains("\"traceId\":\"$TRACE_ID\"")
+        assertThat(output.out.lines().lastOrNull { it.contains("mvc-trace-failure") })
+            .contains("\"traceId\":\"$TRACE_ID\"")
+    }
+
+    @Test
+    fun `rejecting exporter does not fail a successful managed outbound request`() {
+        exportCollector.reject()
+
+        val response = request("/traces/outbound", VALID_TRACE_PARENT)
+
+        assertThat(response.statusCode()).isEqualTo(200)
+        traceParent(outboundCollector.requests.last().headers).hasTraceId(TRACE_ID)
     }
 
     private fun request(path: String, traceParent: String? = null): HttpResponse<String> {
@@ -129,6 +146,8 @@ class MvcTracingFixtureController(
     @param:Value("\${tracing.fixture.outbound-url}") private val outboundUrl: String,
 ) {
 
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     @GetMapping("/traces/outbound")
     fun outbound(): Map<String, String> {
         restClientBuilder.build().get().uri(outboundUrl).retrieve().toBodilessEntity()
@@ -136,7 +155,10 @@ class MvcTracingFixtureController(
     }
 
     @GetMapping("/traces/failure")
-    fun failure(): Nothing = throw IllegalStateException("tracing fixture failure")
+    fun failure(): Nothing {
+        logger.error("mvc-trace-failure")
+        throw IllegalStateException("tracing fixture failure")
+    }
 }
 
 private class TraceParentAssertion(private val value: String?) {

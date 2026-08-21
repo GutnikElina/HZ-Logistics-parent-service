@@ -18,6 +18,9 @@ import org.springframework.security.config.annotation.web.reactive.EnableWebFlux
 import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
+import org.springframework.boot.test.system.CapturedOutput
+import org.springframework.boot.test.system.OutputCaptureExtension
+import org.junit.jupiter.api.extension.ExtendWith
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
@@ -25,6 +28,7 @@ import org.springframework.web.reactive.function.client.WebClient
 import reactor.core.publisher.Mono
 import reactor.core.scheduler.Schedulers
 import java.time.Duration
+import org.slf4j.LoggerFactory
 
 @SpringBootTest(
     classes = [WebFluxTracingFixtureApplication::class],
@@ -35,6 +39,7 @@ import java.time.Duration
         "management.otlp.metrics.export.enabled=false",
     ],
 )
+@ExtendWith(OutputCaptureExtension::class)
 class WebFluxTracingIntegrationTest {
 
     @LocalServerPort
@@ -75,7 +80,18 @@ class WebFluxTracingIntegrationTest {
     }
 
     @Test
-    fun `correlates reactive problem responses and survives a rejecting collector`() {
+    fun `creates and propagates a fresh trace when traceparent is absent`() {
+        http.get().uri("/traces/reactor")
+            .exchange()
+            .expectStatus().isOk
+
+        traceParent(outboundCollector.requests.last().headers)
+            .isValid()
+            .hasTraceIdNotEqualTo(TRACE_ID)
+    }
+
+    @Test
+    fun `correlates reactive problem responses and JSON logs with a rejecting collector`(output: CapturedOutput) {
         exportCollector.reject()
 
         val response = http.get().uri("/traces/failure")
@@ -86,6 +102,8 @@ class WebFluxTracingIntegrationTest {
             .returnResult()
 
         assertThat(response.responseBody).contains("\"traceId\":\"$TRACE_ID\"")
+        assertThat(output.out.lines().lastOrNull { it.contains("webflux-trace-failure") })
+            .contains("\"traceId\":\"$TRACE_ID\"")
     }
 
     private companion object {
@@ -135,6 +153,8 @@ class WebFluxTracingFixtureController(
     @param:Value("\${tracing.fixture.outbound-url}") private val outboundUrl: String,
 ) {
 
+    private val logger = LoggerFactory.getLogger(javaClass)
+
     @GetMapping("/traces/outbound")
     fun outbound(): Mono<Map<String, String>> =
         webClientBuilder.build().get().uri(outboundUrl).retrieve().toBodilessEntity()
@@ -145,7 +165,10 @@ class WebFluxTracingFixtureController(
         Mono.defer { outbound() }.publishOn(Schedulers.parallel())
 
     @GetMapping("/traces/failure")
-    fun failure(): Mono<Nothing> = Mono.error(IllegalStateException("tracing fixture failure"))
+    fun failure(): Mono<Nothing> {
+        logger.error("webflux-trace-failure")
+        return Mono.error(IllegalStateException("tracing fixture failure"))
+    }
 }
 
 private class WebFluxTraceParentAssertion(private val value: String?) {

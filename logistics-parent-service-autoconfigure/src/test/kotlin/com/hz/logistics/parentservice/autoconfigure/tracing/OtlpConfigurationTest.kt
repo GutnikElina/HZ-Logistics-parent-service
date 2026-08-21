@@ -6,6 +6,8 @@ import com.hz.logistics.parentservice.autoconfigure.properties.OtlpProperties
 import com.hz.logistics.parentservice.autoconfigure.properties.OtlpProtocol
 import com.hz.logistics.parentservice.autoconfigure.properties.PlatformProperties
 import io.opentelemetry.api.OpenTelemetry
+import io.opentelemetry.exporter.otlp.http.trace.OtlpHttpSpanExporter
+import io.opentelemetry.exporter.otlp.trace.OtlpGrpcSpanExporter
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
@@ -17,7 +19,12 @@ import java.time.Duration
 class OtlpConfigurationTest {
 
     private val contextRunner = ApplicationContextRunner()
-        .withConfiguration(AutoConfigurations.of(PlatformAutoConfiguration::class.java))
+        .withConfiguration(
+            AutoConfigurations.of(
+                PlatformAutoConfiguration::class.java,
+                PlatformTracingAutoConfiguration::class.java,
+            ),
+        )
 
     @Test
     fun `keeps local tracing eligible when no OTLP endpoint is configured`() {
@@ -96,6 +103,26 @@ class OtlpConfigurationTest {
                 assertThat(context).hasSingleBean(OpenTelemetry::class.java)
                 assertThat(context).doesNotHaveBean("platformOtlpTracingCustomizer")
             }
+    }
+
+    @Test
+    fun `builds the configured HTTP and gRPC exporters without performing request-time export`() {
+        val httpProperties = PlatformProperties().apply {
+            tracing.otlp.endpoint = java.net.URI.create("http://collector.example.test:4318/v1/traces")
+            tracing.otlp.protocol = OtlpProtocol.HTTP_PROTOBUF
+            tracing.otlp.headers = mapOf("Authorization" to "Bearer test-only")
+            tracing.otlp.timeout = Duration.ofSeconds(3)
+            tracing.otlp.compression = OtlpCompression.NONE
+        }
+        val grpcProperties = PlatformProperties().apply {
+            tracing.otlp.endpoint = java.net.URI.create("http://collector.example.test:4317")
+            tracing.otlp.protocol = OtlpProtocol.GRPC
+        }
+
+        assertThat(OtlpTracingCustomizer(httpProperties.tracing).createExporter())
+            .isInstanceOf(OtlpHttpSpanExporter::class.java)
+        assertThat(OtlpTracingCustomizer(grpcProperties.tracing).createExporter())
+            .isInstanceOf(OtlpGrpcSpanExporter::class.java)
     }
 
     private fun properties(context: org.springframework.boot.test.context.assertj.AssertableApplicationContext): PlatformProperties =

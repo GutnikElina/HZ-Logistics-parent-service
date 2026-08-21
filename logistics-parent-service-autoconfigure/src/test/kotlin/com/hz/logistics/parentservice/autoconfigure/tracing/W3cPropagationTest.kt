@@ -88,12 +88,22 @@ class W3cPropagationTest {
     @Test
     fun `accepts inclusive sampling bounds`() {
         ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(PlatformAutoConfiguration::class.java))
+            .withConfiguration(
+                AutoConfigurations.of(
+                    PlatformAutoConfiguration::class.java,
+                    PlatformTracingAutoConfiguration::class.java,
+                ),
+            )
             .withPropertyValues("logistics.parent-service.tracing.sampling-probability=0.0")
             .run { context -> assertThat(context).hasNotFailed() }
 
         ApplicationContextRunner()
-            .withConfiguration(AutoConfigurations.of(PlatformAutoConfiguration::class.java))
+            .withConfiguration(
+                AutoConfigurations.of(
+                    PlatformAutoConfiguration::class.java,
+                    PlatformTracingAutoConfiguration::class.java,
+                ),
+            )
             .withPropertyValues("logistics.parent-service.tracing.sampling-probability=1.0")
             .run { context -> assertThat(context).hasNotFailed() }
     }
