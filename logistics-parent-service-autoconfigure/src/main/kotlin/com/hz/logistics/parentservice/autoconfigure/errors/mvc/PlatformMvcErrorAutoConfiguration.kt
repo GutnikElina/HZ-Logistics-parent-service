@@ -1,9 +1,11 @@
 package com.hz.logistics.parentservice.autoconfigure.errors.mvc
 
+import com.hz.logistics.parentservice.autoconfigure.PlatformAutoConfiguration
 import com.hz.logistics.parentservice.autoconfigure.errors.PlatformProblemDetailFactory
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.boot.autoconfigure.AutoConfiguration
+import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -23,6 +25,7 @@ import org.springframework.web.server.ResponseStatusException
 
 /** Servlet/MVC adapter for the platform's safe, stack-neutral problem contract. */
 @AutoConfiguration
+@AutoConfigureAfter(PlatformAutoConfiguration::class)
 @ConditionalOnClass(name = ["org.springframework.web.servlet.DispatcherServlet"])
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 @ConditionalOnProperty(

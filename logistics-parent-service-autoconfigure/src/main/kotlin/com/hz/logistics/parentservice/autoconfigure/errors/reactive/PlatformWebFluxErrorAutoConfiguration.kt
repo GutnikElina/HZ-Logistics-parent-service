@@ -1,7 +1,9 @@
 package com.hz.logistics.parentservice.autoconfigure.errors.reactive
 
+import com.hz.logistics.parentservice.autoconfigure.PlatformAutoConfiguration
 import com.hz.logistics.parentservice.autoconfigure.errors.PlatformProblemDetailFactory
 import org.springframework.boot.autoconfigure.AutoConfiguration
+import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.AutoConfigureBefore
 import org.springframework.boot.autoconfigure.condition.ConditionalOnClass
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
@@ -31,6 +33,7 @@ import java.nio.charset.StandardCharsets
 
 /** Non-blocking WebFlux adapter for the shared ProblemDetail representation. */
 @AutoConfiguration
+@AutoConfigureAfter(PlatformAutoConfiguration::class)
 @AutoConfigureBefore(name = ["org.springframework.boot.webflux.autoconfigure.error.ErrorWebFluxAutoConfiguration"])
 @ConditionalOnClass(name = ["org.springframework.web.reactive.DispatcherHandler"])
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.REACTIVE)
@@ -58,7 +61,7 @@ class PlatformWebFluxErrorAutoConfiguration {
     class ErrorHandlerConfiguration {
 
         @Bean
-        @ConditionalOnMissingBean(annotation = [RestControllerAdvice::class])
+        @ConditionalOnMissingBean(value = [ErrorWebExceptionHandler::class])
         fun platformWebFluxProblemHandler(factory: PlatformProblemDetailFactory): PlatformWebFluxProblemHandler =
             PlatformWebFluxProblemHandler(factory)
     }

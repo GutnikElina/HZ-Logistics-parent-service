@@ -1,6 +1,7 @@
 package com.hz.logistics.parentservice.autoconfigure.logging
 
 import ch.qos.logback.classic.LoggerContext
+import com.hz.logistics.parentservice.autoconfigure.PlatformAutoConfiguration
 import com.hz.logistics.parentservice.autoconfigure.properties.PlatformProperties
 import com.hz.logistics.parentservice.autoconfigure.tracing.PlatformTracingAutoConfiguration
 import io.opentelemetry.api.OpenTelemetry
@@ -18,7 +19,7 @@ import org.springframework.context.annotation.Bean
  * fan-out appender to configure and therefore keeps complete precedence.
  */
 @AutoConfiguration
-@AutoConfigureAfter(PlatformTracingAutoConfiguration::class)
+@AutoConfigureAfter(PlatformAutoConfiguration::class, PlatformTracingAutoConfiguration::class)
 @ConditionalOnProperty(
     prefix = "logistics.parent-service.logging",
     name = ["enabled"],

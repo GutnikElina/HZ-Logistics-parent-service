@@ -1,9 +1,11 @@
 package com.hz.logistics.parentservice.autoconfigure.metrics
 
+import com.hz.logistics.parentservice.autoconfigure.PlatformAutoConfiguration
 import com.hz.logistics.parentservice.autoconfigure.properties.MetricsProperties
 import com.hz.logistics.parentservice.autoconfigure.properties.PlatformProperties
 import io.micrometer.core.instrument.MeterRegistry
 import org.springframework.boot.autoconfigure.AutoConfiguration
+import org.springframework.boot.autoconfigure.AutoConfigureAfter
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.boot.micrometer.metrics.autoconfigure.MeterRegistryCustomizer
@@ -18,6 +20,7 @@ import org.springframework.context.annotation.Bean
  * [PlatformMetricsCustomizer].
  */
 @AutoConfiguration
+@AutoConfigureAfter(PlatformAutoConfiguration::class)
 @ConditionalOnProperty(
     prefix = "logistics.parent-service.metrics",
     name = ["enabled"],

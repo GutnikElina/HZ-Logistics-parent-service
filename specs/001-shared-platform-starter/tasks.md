@@ -333,7 +333,7 @@ Task: T058 independent capability back-off tests
 
 ## Phase 16: Convergence
 
-- [ ] T100 Wire the implemented metrics auto-configuration into the registered auto-configuration order and make T052/T053 prove application registry reuse, safe common tags, and metrics-only back-off per T059/T060 / FR-011 / Constitution IV (partial)
-- [ ] T101 Wire the implemented MVC ProblemDetail auto-configuration and complete validation, content-negotiation, unhandled-failure, and committed-response handling so T054 returns the common safe contract per T061 / FR-012 / FR-013 / Constitution V (partial)
-- [ ] T102 Wire the implemented WebFlux ProblemDetail auto-configuration, preserve non-blocking serialization, and back off for an application-owned reactive error handler so T055 remains equivalent and independent per T062 / FR-012 / FR-017 / Constitution III (partial)
-- [ ] T103 Expose the implemented default `PlatformLogSanitizer` through logging auto-configuration and connect it to the pre-sink pipeline while preserving immutable baseline redaction and application overrides per T063 / FR-015 / Constitution IV (partial)
+- [X] T100 Wire the implemented metrics auto-configuration into the registered auto-configuration order and make T052/T053 prove application registry reuse, safe common tags, and metrics-only back-off per T059/T060 / FR-011 / Constitution IV (partial)
+- [X] T101 Wire the implemented MVC ProblemDetail auto-configuration and complete validation, content-negotiation, unhandled-failure, and committed-response handling so T054 returns the common safe contract per T061 / FR-012 / FR-013 / Constitution V (partial)
+- [X] T102 Wire the implemented WebFlux ProblemDetail auto-configuration, preserve non-blocking serialization, and back off for an application-owned reactive error handler so T055 remains equivalent and independent per T062 / FR-012 / FR-017 / Constitution III (partial)
+- [X] T103 Expose the implemented default `PlatformLogSanitizer` through logging auto-configuration and connect it to the pre-sink pipeline while preserving immutable baseline redaction and application overrides per T063 / FR-015 / Constitution IV (partial)
