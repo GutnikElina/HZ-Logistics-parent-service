@@ -325,11 +325,11 @@ Task: T058 independent capability back-off tests
 
 ## Phase 15: Convergence
 
-- [ ] T095 CRITICAL Implement and register the Micrometer metrics policy so T052 and T053 pass for counter/timer/gauge recording, application registry reuse, safe common tags, and metrics-only back-off, per T052/T053 / FR-011 / Constitution IV (missing)
-- [ ] T096 CRITICAL Implement and register equivalent MVC and WebFlux ProblemDetail error handlers so T054 and T055 pass for authentication, authorization, client/unhandled failures, media type, trace correlation, safe details, committed responses, and error-only back-off, per T054/T055 / FR-012 / FR-013 / Constitution V (missing)
-- [ ] T097 CRITICAL Implement the baseline-plus-configured `PlatformLogSanitizer` and expose it through logging auto-configuration so T056 redacts all required event locations, nested throwable data, configured fields/paths, and preserves safe near-matches, per T056 / FR-015 / Constitution IV (missing)
-- [ ] T098 CRITICAL Implement and register the pre-sink redacting Logback JSON pipeline, safe OpenTelemetry log installer, and logging-only back-off so T057 receives valid correlated JSON/OTel events without raw canaries and remains usable when OTel logging is unavailable, per T057 / FR-014 / FR-015 / Constitution IV (missing)
-- [ ] T099 CRITICAL Complete independent metrics, error, and logging owner conditions and registration so T058 proves each replacement backs off only its capability while unrelated defaults remain active, per T058 / FR-017 / Constitution III / Constitution V (missing)
+- [X] T095 CRITICAL Implement and register the Micrometer metrics policy so T052 and T053 pass for counter/timer/gauge recording, application registry reuse, safe common tags, and metrics-only back-off, per T052/T053 / FR-011 / Constitution IV (missing)
+- [X] T096 CRITICAL Implement and register equivalent MVC and WebFlux ProblemDetail error handlers so T054 and T055 pass for authentication, authorization, client/unhandled failures, media type, trace correlation, safe details, committed responses, and error-only back-off, per T054/T055 / FR-012 / FR-013 / Constitution V (missing)
+- [X] T097 CRITICAL Implement the baseline-plus-configured `PlatformLogSanitizer` and expose it through logging auto-configuration so T056 redacts all required event locations, nested throwable data, configured fields/paths, and preserves safe near-matches, per T056 / FR-015 / Constitution IV (missing)
+- [X] T098 CRITICAL Implement and register the pre-sink redacting Logback JSON pipeline, safe OpenTelemetry log installer, and logging-only back-off so T057 receives valid correlated JSON/OTel events without raw canaries and remains usable when OTel logging is unavailable, per T057 / FR-014 / FR-015 / Constitution IV (missing)
+- [X] T099 CRITICAL Complete independent metrics, error, and logging owner conditions and registration so T058 proves each replacement backs off only its capability while unrelated defaults remain active, per T058 / FR-017 / Constitution III / Constitution V (missing)
 
 ## Phase 16: Convergence
 
