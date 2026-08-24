@@ -1,3 +1,4 @@
+import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.tasks.testing.Test
 
 plugins {
@@ -5,12 +6,21 @@ plugins {
     kotlin("jvm")
     kotlin("plugin.spring")
     kotlin("kapt")
+    id("maven-publish")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+        }
+    }
 }
 
 dependencies {
-    implementation(enforcedPlatform(project(":logistics-parent-service-bom")))
-    compileOnly(enforcedPlatform(project(":logistics-parent-service-bom")))
-    kapt(enforcedPlatform(project(":logistics-parent-service-bom")))
+    implementation(platform(project(":logistics-parent-service-bom")))
+    compileOnly(platform(project(":logistics-parent-service-bom")))
+    kapt(platform(project(":logistics-parent-service-bom")))
 
     implementation("org.springframework.boot:spring-boot")
     implementation("org.springframework.boot:spring-boot-autoconfigure")

@@ -1,12 +1,22 @@
 import org.gradle.api.GradleException
+import org.gradle.api.publish.maven.MavenPublication
 
 plugins {
     `java-library`
     kotlin("jvm")
+    id("maven-publish")
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenJava") {
+            from(components["java"])
+        }
+    }
 }
 
 dependencies {
-    api(enforcedPlatform(project(":logistics-parent-service-bom")))
+    api(platform(project(":logistics-parent-service-bom")))
     api(project(":logistics-parent-service-autoconfigure"))
 
     api("org.springframework.boot:spring-boot-starter-actuator")

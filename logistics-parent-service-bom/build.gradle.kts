@@ -2,14 +2,24 @@ import org.gradle.api.tasks.JavaExec
 import org.gradle.api.tasks.testing.Test
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.toolchain.JavaToolchainService
+import org.gradle.api.publish.maven.MavenPublication
 
 plugins {
     `java-platform`
     id("java-base")
+    id("maven-publish")
 }
 
 javaPlatform {
     allowDependencies()
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("mavenBom") {
+            from(components["javaPlatform"])
+        }
+    }
 }
 
 val springBootVersion: String by project
