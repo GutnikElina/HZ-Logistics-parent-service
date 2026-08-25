@@ -4,7 +4,9 @@ com.hz.logistics.parentservice.autoconfigure.metrics.PlatformMetricsAutoConfigur
 # MVC and WebFlux ordering and selected-stack conditions are declared on their
 # isolated auto-configuration classes, keeping the non-selected API unlinked.
 com.hz.logistics.parentservice.autoconfigure.security.mvc.PlatformMvcSecurityAutoConfiguration
+com.hz.logistics.parentservice.autoconfigure.security.mvc.PlatformMvcMethodSecurityAutoConfiguration
 com.hz.logistics.parentservice.autoconfigure.security.reactive.PlatformWebFluxSecurityAutoConfiguration
+com.hz.logistics.parentservice.autoconfigure.security.reactive.PlatformWebFluxMethodSecurityAutoConfiguration
 com.hz.logistics.parentservice.autoconfigure.errors.mvc.PlatformMvcErrorAutoConfiguration
 com.hz.logistics.parentservice.autoconfigure.errors.reactive.PlatformWebFluxErrorAutoConfiguration
 com.hz.logistics.parentservice.autoconfigure.logging.PlatformLoggingAutoConfiguration
