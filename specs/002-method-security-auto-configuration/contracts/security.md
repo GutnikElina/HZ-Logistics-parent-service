@@ -18,6 +18,11 @@ Each branch requires all of the following:
 2. the matching selected Spring Boot web application type;
 3. the matching Spring Security method-security classes and matching web-stack classes.
 
+The implementation checks these exact classpath markers:
+
+- MVC: `DispatcherServlet`, `EnableMethodSecurity`, `AuthorizationManagerBeforeMethodInterceptor`, `AuthorizationManagerAfterMethodInterceptor`, `PreFilterAuthorizationMethodInterceptor`, `PostFilterAuthorizationMethodInterceptor`, and `jakarta.annotation.security.RolesAllowed`;
+- WebFlux: `DispatcherHandler`, `EnableReactiveMethodSecurity`, `AuthorizationManagerBeforeReactiveMethodInterceptor`, `AuthorizationManagerAfterReactiveMethodInterceptor`, `PreFilterAuthorizationReactiveMethodInterceptor`, `PostFilterAuthorizationReactiveMethodInterceptor`, and Reactor `Mono`.
+
 The MVC branch never creates reactive method infrastructure. The WebFlux branch never creates MVC method infrastructure. This remains true when tests or a consumer have both API families on the classpath: selected application type is decisive.
 
 ## Authority contract
@@ -39,6 +44,8 @@ With `security.enabled=false`, the platform contributes neither its default web 
 ## Manual enablement compatibility
 
 Manual matching `@EnableMethodSecurity` or `@EnableReactiveMethodSecurity` remains optional. When its named Spring Security infrastructure is already registered, the matching platform method auto-configuration backs off to prevent duplicate advisors/interceptors. That consumer configuration owns its selected flags and customizations. A web-chain bean alone is not such a signal.
+
+The MVC ownership sentinels are `_prePostMethodSecurityConfiguration`, `_securedMethodSecurityConfiguration`, and `_jsr250MethodSecurityConfiguration`. The reactive ownership sentinels are `_reactiveMethodSecurityConfiguration` for authorization-manager mode and `reactiveMethodSecurityConfiguration` plus `methodSecurityInterceptor` for legacy mode. The platform branch backs off if any sentinel for the selected stack is present.
 
 ## Verification matrix
 

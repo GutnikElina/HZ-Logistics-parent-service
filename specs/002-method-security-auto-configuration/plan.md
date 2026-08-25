@@ -18,7 +18,7 @@ The new configurations are ordered immediately after their matching platform web
 
 **Storage**: N/A — this feature creates no persistent data or domain model
 
-**Testing**: JUnit 6, AssertJ, Spring Boot context runners, `MockMvc`, `WebTestClient`, and controlled mock JWT decoders
+**Testing**: JUnit 6, AssertJ, reflection-level auto-configuration unit tests, Spring Boot context runners, `MockMvc`, `WebTestClient`, and controlled mock JWT decoders
 
 **Target Platform**: JVM services built with Gradle Kotlin DSL on Java 21
 
@@ -34,7 +34,7 @@ The new configurations are ordered immediately after their matching platform web
 - Gate both method branches on `security.enabled`, web application type, and their own relevant Spring Security and web-stack classes.
 - Preserve `PlatformProperties`, `SecurityProperties`, `RoleClaimsAuthorityMapper`, and `PlatformJwtAuthenticationConverter` unchanged so method expressions see the existing `ROLE_` and `SCOPE_` authorities.
 
-**Scale/Scope**: Two new auto-configuration classes, one imports-registry change, targeted unit/context/adoption tests in the existing suites, removal of two test-only manual-enablement annotations, and documentation/compatibility updates. No consumer configuration property is added.
+**Scale/Scope**: Two new auto-configuration classes, one imports-registry change, targeted unit/context/adoption tests in the existing suites, removal of two test-only manual-enablement annotations, and documentation/compatibility updates. No consumer configuration property is added. Unit coverage includes reflection assertions for both new configuration classes and their conditions.
 
 ## Constitution Check
 
@@ -119,7 +119,7 @@ specs/001-shared-platform-starter/
    - `@AutoConfiguration` and `@AutoConfigureAfter` for `PlatformAutoConfiguration` and `PlatformMvcSecurityAutoConfiguration`;
    - `@ConditionalOnWebApplication(type = SERVLET)`;
    - the same `@ConditionalOnProperty(prefix = "logistics.parent-service.security", name = ["enabled"], havingValue = "true", matchIfMissing = true)` used by the MVC web security configuration;
-   - string-name `@ConditionalOnClass` checks for the Servlet marker `DispatcherServlet`, `EnableMethodSecurity`, and the MVC method-security interceptor/authorization-manager type. Include the Jakarta JSR-250 annotation marker because this branch enables JSR-250 support;
+   - string-name `@ConditionalOnClass` checks for `org.springframework.web.servlet.DispatcherServlet`, `org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity`, `org.springframework.security.authorization.method.AuthorizationManagerBeforeMethodInterceptor`, `org.springframework.security.authorization.method.AuthorizationManagerAfterMethodInterceptor`, `org.springframework.security.authorization.method.PreFilterAuthorizationMethodInterceptor`, `org.springframework.security.authorization.method.PostFilterAuthorizationMethodInterceptor`, and `jakarta.annotation.security.RolesAllowed`;
    - `@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)`. Pre/post security remains enabled by Spring Security's default. The two explicit flags are required for `@Secured`, `@RolesAllowed`, `@PermitAll`, and `@DenyAll`.
 
 2. Create `security.reactive.PlatformWebFluxMethodSecurityAutoConfiguration` with:
@@ -127,7 +127,7 @@ specs/001-shared-platform-starter/
    - `@AutoConfiguration` and `@AutoConfigureAfter` for `PlatformAutoConfiguration` and `PlatformWebFluxSecurityAutoConfiguration`;
    - `@ConditionalOnWebApplication(type = REACTIVE)`;
    - the identical security-enabled property condition;
-   - string-name `@ConditionalOnClass` checks for `DispatcherHandler`, `EnableReactiveMethodSecurity`, Reactor `Mono`, and the reactive before-method authorization interceptor/manager;
+   - string-name `@ConditionalOnClass` checks for `org.springframework.web.reactive.DispatcherHandler`, `org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity`, `org.springframework.security.authorization.method.AuthorizationManagerBeforeReactiveMethodInterceptor`, `org.springframework.security.authorization.method.AuthorizationManagerAfterReactiveMethodInterceptor`, `org.springframework.security.authorization.method.PreFilterAuthorizationReactiveMethodInterceptor`, `org.springframework.security.authorization.method.PostFilterAuthorizationReactiveMethodInterceptor`, and `reactor.core.publisher.Mono`;
    - `@EnableReactiveMethodSecurity`, using Spring Security's standard reactive authorization-manager implementation for publisher-returning methods.
 
 Neither class declares a `SecurityFilterChain`, `SecurityWebFilterChain`, JWT decoder, converter, mapper, property bean, error handler, or a reference to the opposite web stack. `PlatformProperties.security` continues to provide only the existing enablement input; all authority creation remains in `PlatformJwtAuthenticationConverter` and `RoleClaimsAuthorityMapper`.
@@ -151,9 +151,11 @@ The method configurations are deliberately not nested in the filter-chain bean m
 
 ### Duplicate-enablement compatibility decision
 
-Spring Security's enablement annotations import named infrastructure, including the MVC `_prePostMethodSecurityConfiguration`, `_securedMethodSecurityConfiguration`, `_jsr250MethodSecurityConfiguration`, and interceptor beans, and the reactive `_reactiveMethodSecurityConfiguration` plus interceptor beans. Enabling both mechanisms in one selected-stack context would therefore risk duplicate named beans and duplicate advisors.
+Spring Security's enablement annotations import named infrastructure, including the MVC `_prePostMethodSecurityConfiguration`, `_securedMethodSecurityConfiguration`, and `_jsr250MethodSecurityConfiguration` beans, and the reactive `_reactiveMethodSecurityConfiguration` bean. Legacy reactive enablement with `useAuthorizationManager = false` registers the generated `reactiveMethodSecurityConfiguration` configuration bean and its `methodSecurityInterceptor` advisor. Enabling both mechanisms in one selected-stack context would therefore risk duplicate named beans and duplicate advisors.
 
-The platform auto-configurations will use an explicit, stack-specific `@ConditionalOnMissingBean(name = [...])` guard against those already registered framework configuration/interceptor sentinels. The MVC guard covers the pre/post, secured, and JSR-250 sentinels; the reactive guard covers the authorization-manager and legacy reactive-interceptor sentinels. This has three effects:
+The platform auto-configurations will use one `@ConditionalOnMissingBean(name = [...])` declaration per branch. Spring Boot evaluates the named set as an “any present” check for this condition: the MVC branch must back off when any of `_prePostMethodSecurityConfiguration`, `_securedMethodSecurityConfiguration`, or `_jsr250MethodSecurityConfiguration` is present; the reactive branch must back off when any of `_reactiveMethodSecurityConfiguration`, `reactiveMethodSecurityConfiguration`, or `methodSecurityInterceptor` is present. The annotation values and this observable “back off if any selected-stack sentinel exists” behavior are pinned by unit and context tests.
+
+The guards must not inspect `SecurityFilterChain` or `SecurityWebFilterChain`, and they must not treat an opposite-stack method-security sentinel as ownership of the selected branch. This has three effects:
 
 - a consumer needs no enablement annotation in the normal path;
 - a consumer that still deliberately declares the matching enablement annotation is treated as the owner of method-security customization, and the platform branch backs off without duplicate infrastructure; and
@@ -165,32 +167,34 @@ Pin this decision with context tests. Remove the two existing test-fixture manua
 
 All test changes below are written and observed failing before the matching production changes. Do not add a new Gradle module or dependency declaration.
 
-1. **Write failing auto-configuration selection tests.** Update `AutoConfigurationSelectionTest` so its exact imports assertion includes both new classes in the documented order. Add condition-report assertions for non-web, Servlet, Reactive, and dual-API/explicit-type contexts. Assert that only the selected method auto-configuration is a full match. Use a filtered test class loader for each method-security enablement class to prove the relevant classpath condition backs off safely.
+1. **Write failing unit and auto-configuration selection tests.** Add `MethodSecurityAutoConfigurationAnnotationTest` under `src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/security/` with reflection assertions for both new classes: `@AutoConfiguration`, selected `@ConditionalOnWebApplication`, the exact security property condition, exact `@ConditionalOnClass` names, `@AutoConfigureAfter`, and the stack-specific missing-bean sentinel names/semantics. Update `AutoConfigurationSelectionTest` so its exact imports assertion includes both new classes in the documented order. Add condition-report assertions for non-web, Servlet, Reactive, and dual-API/explicit-type contexts. Assert that only the selected method auto-configuration is a full match. Use a filtered test class loader for each listed method-security class to prove the relevant classpath condition backs off safely.
 
 2. **Write failing fast security-context tests.** Extend `SecurityAutoConfigurationContextTest` to pass both new auto-configurations to the Servlet and Reactive runners. Assert the selected infrastructure marker (`_prePostMethodSecurityConfiguration` for MVC or `_reactiveMethodSecurityConfiguration` for WebFlux) exists and the opposite marker does not. Add cases proving:
 
    - an application `SecurityFilterChain` or `SecurityWebFilterChain` removes only the platform chain and leaves the selected method infrastructure;
    - `security.enabled=false` removes both platform chain and selected method infrastructure while shared correlation and ProblemDetail beans remain;
-   - an application-owned matching manual method-security configuration causes the new platform branch to back off cleanly, documenting the duplicate-infrastructure compatibility rule.
+   - an application-owned matching manual method-security configuration causes the new platform branch to back off cleanly for each named sentinel, documenting the duplicate-infrastructure compatibility rule; a web-chain bean alone does not cause method-security back-off.
 
    Extend `CapabilityBackOffTest` with the same disabled-security assertion in the all-capabilities context so the security flag remains scoped to security only.
 
-3. **Write failing MVC adoption tests first.** In `MvcSecurityIntegrationTest`, introduce test-only `MvcMethodSecurityFixtureService` and `MvcMethodSecurityFixtureController` (or equivalent focused fixture types) with no `@EnableMethodSecurity` on any fixture application. Cover all eight required annotation families:
+3. **Write failing MVC adoption tests first.** In `MvcSecurityIntegrationTest`, introduce test-only `MvcMethodSecurityFixtureService` and `MvcMethodSecurityFixtureController` (or equivalent focused fixture types) with no `@EnableMethodSecurity` on the automatic-path fixture. Cover all eight required annotation families:
 
    - `@PreAuthorize` and `@PostAuthorize` for an existing `ROLE_` authority;
-   - `@PreFilter` and `@PostFilter` with caller-owned collection elements and an assertion that unauthorized elements do not reach/leave the service;
+   - `@PreFilter` and `@PostFilter` with caller-owned collection elements, including the no-match case where the service receives and returns an empty collection, and an assertion that unauthorized elements do not reach/leave the service;
    - `@Secured` and `@RolesAllowed` with the existing role vocabulary;
    - `@PermitAll` and `@DenyAll`, while still proving the HTTP layer returns `401` before an unauthenticated request reaches the service.
 
+   Add a matching consumer `@EnableMethodSecurity` fixture with pre/post, secured, and JSR-250 options to prove that the platform backs off on each corresponding sentinel without duplicate advisors or interceptors. Assert the method-denial ProblemDetail response has `application/problem+json`, `type`, `title`, `status`, `detail`, `instance`, and a 32-character `traceId`.
+
    Extend the controlled decoder tokens with nested roles plus `scope` and `scp` claims; assert `ROLE_<role>` and `SCOPE_<permission>` expressions both allow matching callers and reject missing authorities with `403`. Add a disabled-security fixture with an application-owned permit-all web chain and an annotated deny method: it must execute, proving no platform method advisor was contributed. Upgrade the current `MvcApplicationOwnedSecurityFixtureApplication` to a bearer-authenticating application chain using the existing decoder/converter/role-mapper behavior; assert exactly its chain is present, an authorized token returns `200`, a token lacking the method authority returns `403`, and no token follows the application's `401` policy.
 
-4. **Write failing WebFlux adoption tests first.** Mirror the MVC proof in `WebFluxSecurityIntegrationTest` with `WebFluxMethodSecurityFixtureService` and `WebFluxMethodSecurityFixtureController`, both free of `@EnableReactiveMethodSecurity`. Cover publisher-returning `@PreAuthorize` and `@PostAuthorize` methods for role and `scope`/`scp` authorities. Include delayed, empty, and scheduled publisher cases to prove the authorization decision remains bound to Reactor security context. Assert `200`/`403`/`401` outcomes, a platform-disabled annotated-deny fixture that executes under application-owned permit-all security, and a bearer-authenticating application-owned `SecurityWebFilterChain` that backs off only the platform chain while method authorization still distinguishes the authorized and missing-authority tokens.
+4. **Write failing WebFlux adoption tests first.** Mirror the MVC proof in `WebFluxSecurityIntegrationTest` with `WebFluxMethodSecurityFixtureService` and `WebFluxMethodSecurityFixtureController`, both free of `@EnableReactiveMethodSecurity` on the automatic-path fixture. Cover publisher-returning `@PreAuthorize` and `@PostAuthorize` methods for role and `scope`/`scp` authorities. Include delayed, empty, and scheduled publisher cases with explicit assertions for authorized values, empty completion, retained Reactor context, and missing-authority rejection. Add a matching consumer `@EnableReactiveMethodSecurity` fixture for both authorization-manager and legacy mode sentinels, proving the platform backs off without duplicate advisors/interceptors. Assert `200`/`403`/`401` outcomes, a platform-disabled annotated-deny fixture that executes under application-owned permit-all security, a bearer-authenticating application-owned `SecurityWebFilterChain` that backs off only the platform chain, and the method-denial ProblemDetail contract (`application/problem+json`, `type`, `title`, `status`, `detail`, `instance`, and 32-character `traceId`).
 
 5. **Make the minimal production change.** Add the two classes described in the auto-configuration design and insert their import entries in the exact order above. Do not modify `PlatformMvcSecurityAutoConfiguration`, `PlatformWebFluxSecurityAutoConfiguration`, `PlatformProperties`, `SecurityProperties`, `RoleClaimsAuthorityMapper`, or `PlatformJwtAuthenticationConverter` unless a red test proves a genuine compatibility defect outside this design.
 
 6. **Remove legacy manual fixture enablement.** Delete `@EnableMethodSecurity` from `MvcProblemDetailFixtureApplication` in `MvcProblemDetailIntegrationTest` and the incorrect MVC `@EnableMethodSecurity` from `WebFluxProblemDetailFixtureApplication` in `WebFluxProblemDetailIntegrationTest`. Their existing method-denial ProblemDetail assertions then become regression coverage for automatic MVC and reactive selection, without creating duplicate configuration.
 
-7. **Run focused tests, then the module/repository regression gate.** The expected command order is documented in [quickstart.md](./quickstart.md). Keep test fixture names and test source sets unchanged outside the focused additions so `check` continues to execute every suite.
+7. **Run focused tests, then the module/repository regression gate.** The unit/context and selected-stack focused tests may run immediately after T018 and in parallel with documentation. The expected command order is documented in [quickstart.md](./quickstart.md). Keep test fixture names and test source sets unchanged outside the focused additions so `check` continues to execute every suite.
 
 ## Documentation and Compatibility Updates
 

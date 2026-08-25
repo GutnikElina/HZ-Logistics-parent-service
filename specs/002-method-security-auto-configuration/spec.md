@@ -19,6 +19,7 @@
 - Q: Should an application-owned `SecurityFilterChain` or `SecurityWebFilterChain` disable only the corresponding platform web-security chain while preserving automatic method security? → A: Yes; custom request-level security replaces only the platform web chain, while method security remains active.
 - Q: Should method security be enabled automatically in non-web worker applications that use neither MVC nor WebFlux? → A: No; automatic method security is out of scope for non-web applications, which may configure their own mechanism explicitly.
 - Q: Which annotation families and automatic enablement mechanisms are mandatory for MVC and WebFlux? → A: MVC uses `@EnableMethodSecurity` and requires `@PreAuthorize`, `@PostAuthorize`, `@PreFilter`, `@PostFilter`, `@Secured`, `@RolesAllowed`, `@PermitAll`, and `@DenyAll`; WebFlux uses `@EnableReactiveMethodSecurity` and requires at least `@PreAuthorize` and `@PostAuthorize` for publisher-returning methods.
+- Q: What happens when a consumer already enables method security for the selected web stack? → A: The matching platform method-security auto-configuration backs off when its Spring Security infrastructure sentinel is already registered; the consumer-owned method-security configuration remains active with its selected options, and an application-owned web chain alone is not a back-off signal.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -34,8 +35,10 @@ As an MVC service team, I want method-level authorization to work as soon as I a
 
 1. **Given** an MVC consumer fixture has platform security enabled and does not declare `@EnableMethodSecurity`, **when** an authenticated caller presents the required mapped role or permission, **then** a method protected by `@PreAuthorize` or `@PostAuthorize` is allowed when its expression succeeds and rejected when its expression fails.
 2. **Given** an MVC method accepts a collection or returns a collection protected by `@PreFilter` or `@PostFilter`, **when** the caller has authorities for only part of the data, **then** the method receives or returns only the permitted elements according to the annotation contract.
+   **When** the caller has authority for no elements, **then** the fixture observes an empty filtered collection at the method boundary and no unauthorized element is returned.
 3. **Given** an MVC method is protected by `@Secured` or `@RolesAllowed`, **when** the caller has the required role authority, **then** the method succeeds; **when** the caller lacks it, **then** method authorization rejects the invocation.
 4. **Given** an MVC method is annotated with `@PermitAll`, **when** method authorization evaluates the invocation, **then** the method is not denied by that annotation; **when** the method is annotated with `@DenyAll`, **then** every caller is denied by method authorization. Any selected web-security authentication requirement remains in force before method invocation.
+5. **Given** an MVC consumer declares `@EnableMethodSecurity` with any selected MVC options, **when** the application starts, **then** the platform MVC method-security auto-configuration backs off without duplicate advisors or interceptors, while the consumer-owned configuration remains authoritative.
 
 ---
 
@@ -52,6 +55,7 @@ As a WebFlux service team, I want reactive method-level authorization to work au
 1. **Given** a WebFlux consumer fixture has platform security enabled and declares no explicit MVC or reactive method-security enabling annotation, **when** a valid token calls a method protected by `@PreAuthorize` or `@PostAuthorize`, **then** a matching authority permits the publisher result and a missing authority produces an authorization failure.
 2. **Given** a reactive method performs authorization around a publisher result, **when** the publisher is evaluated asynchronously, **then** the authorization decision remains attached to the current reactive security context and does not allow a caller because of a missing or unrelated context.
 3. **Given** the selected application type is WebFlux, **when** the application starts, **then** only reactive method-security behavior is eligible and no MVC method-security infrastructure is created.
+4. **Given** a WebFlux consumer declares `@EnableReactiveMethodSecurity`, **when** the application starts, **then** the platform WebFlux method-security auto-configuration backs off without duplicate advisors or interceptors, while the consumer-owned configuration remains authoritative.
 
 ---
 
@@ -95,6 +99,8 @@ As a service developer, I want method expressions to use the same authorities as
 - A `hasAuthority` expression is evaluated against the complete mapped authority name, including `ROLE_` for configured roles and `SCOPE_` for standard scopes; permission checks do not silently switch to role semantics.
 - A `@PreFilter` or `@PostFilter` invocation with no matching elements produces the annotation-defined empty result or rejection behavior and must not leak an unauthorized element.
 - Reactive method checks must remain correct when a publisher is delayed, empty, or scheduled on another supported reactive execution boundary.
+- MVC collection fixtures must make the no-match contract observable: the service receives an empty pre-filtered collection and the post-filtered response is empty, with no unauthorized element exposed.
+- Reactive fixtures must assert the framework-defined result for authorized delayed, empty, and rescheduled publishers and rejection for a missing authority, rather than only asserting that the application starts.
 - If both MVC and WebFlux APIs are available on a test classpath, the selected application type determines the active method-security mechanism; the nonselected mechanism must not create beans or alter startup.
 - An application-owned web chain may change request authentication and authorization policy, but its presence alone must not disable the selected platform method-security mechanism.
 - This feature does not enable method security for a non-web application unless the application explicitly owns and enables an appropriate mechanism; platform web-stack selection remains the existing boundary.
@@ -117,6 +123,7 @@ As a service developer, I want method expressions to use the same authorities as
 - **FR-012**: The feature MUST preserve the existing JWT validation, nested role extraction, role-prefix, scope mapping, problem response, and selected-stack web-security contracts defined by `001-shared-platform-starter` unless a change is explicitly required by this feature and documented as a compatibility impact.
 - **FR-013**: The implementation MUST remain within the existing three-module platform structure. It MUST NOT create a new Gradle module, a separate MVC/WebFlux starter, or business-domain logic.
 - **FR-014**: MVC and WebFlux integration coverage MUST prove automatic method-security activation without explicit consumer enablement, every required MVC annotation, the primary reactive annotations, mapped role and scope authorization, 200/401/403 outcomes, `security.enabled=false`, selected-stack isolation, and application-owned web-chain independence.
+- **FR-015**: If a consumer explicitly enables method security for the selected stack, the matching platform method-security auto-configuration MUST back off when its existing Spring Security infrastructure sentinel is present, without duplicate advisors/interceptors or loss of the consumer-owned configuration. An application-owned web chain alone MUST NOT trigger this back-off.
 
 ### Acceptance Matrix
 
@@ -131,6 +138,7 @@ As a service developer, I want method expressions to use the same authorities as
 | Valid token without required authority | `403` | `403` |
 | No token on web-protected endpoint | `401` | `401` |
 | Application-owned web chain | Web chain only backs off | Web chain only backs off |
+| Matching consumer method-security enablement | Platform method branch backs off; consumer configuration remains active | Platform method branch backs off; consumer configuration remains active |
 | `security.enabled=false` | Platform web and method security disabled | Platform web and method security disabled |
 
 ## Success Criteria *(mandatory)*
@@ -146,6 +154,7 @@ As a service developer, I want method expressions to use the same authorities as
 - **SC-007**: With an application-owned web chain present, 100% of both MVC and WebFlux tests confirm that only the platform web chain backs off and method authorization still distinguishes an authorized token from a token missing the required authority.
 - **SC-008**: When both web-stack APIs are available but one web application type is selected, 100% of context checks confirm that no infrastructure from the nonselected method-security mechanism is created and the selected application starts successfully.
 - **SC-009**: Existing security integration coverage for JWT validation, role mapping, scope mapping, public endpoints, and problem responses remains green after the feature is added, with no new consumer-facing configuration required beyond the existing security setting.
+- **SC-010**: 100% of selected-stack context tests confirm that matching consumer method-security enablement backs off the corresponding platform method branch without duplicate infrastructure, while a web-chain bean alone does not cause method-security back-off.
 
 ## Assumptions
 
@@ -154,6 +163,7 @@ As a service developer, I want method expressions to use the same authorities as
 - Method-level authorization is an additional policy layer. It does not replace endpoint authentication, JWT validation, public endpoint rules, or application-owned web security.
 - An application-owned web chain that needs method tests is responsible for preserving bearer-token authentication; this feature only requires that chain ownership not disable platform method security.
 - Standard framework semantics define the detailed behavior of the listed annotations, collection filtering, and reactive publisher authorization. The feature contract specifies which mechanisms are available and how they interact with platform authorities.
+- A matching consumer-owned method-security annotation is a supported compatibility path: it owns the selected method-security options, while the platform contributes no duplicate selected-stack method infrastructure.
 - Implementation-specific Kotlin classes, configuration registrations, dependency declarations, fixture names, and test file paths are intentionally deferred to `plan.md`.
 
 ## Out of Scope

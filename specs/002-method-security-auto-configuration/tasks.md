@@ -25,10 +25,10 @@ description: "Actionable task list for automatic MVC and WebFlux method-security
 
 **Purpose**: Pin stack selection, conditions, and compatibility behavior before production configuration exists.
 
-- [ ] T002 [P] Write failing import-order, non-web, selected-stack-only, dual-API explicit-type, and missing-method-security-class condition tests in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/AutoConfigurationSelectionTest.kt`.
-- [ ] T003 Write the failing MVC method-security context test for the MVC infrastructure marker, absent reactive marker, and continued activation when an application owns `SecurityFilterChain` in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/security/SecurityAutoConfigurationContextTest.kt`.
-- [ ] T004 Write the failing WebFlux method-security context test for the reactive infrastructure marker, absent MVC marker, and continued activation when an application owns `SecurityWebFilterChain` in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/security/SecurityAutoConfigurationContextTest.kt`.
-- [ ] T005 Write failing disabled-security and matching manual-enablement back-off context tests, proving `security.enabled=false` removes the selected platform method infrastructure and application-owned method security avoids duplicate infrastructure in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/security/SecurityAutoConfigurationContextTest.kt`.
+- [ ] T002 [P] Write failing reflection-level unit tests in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/security/MethodSecurityAutoConfigurationAnnotationTest.kt` for both new configuration classes: `@AutoConfiguration`, selected `@ConditionalOnWebApplication`, the exact `logistics.parent-service.security.enabled` property condition, exact MVC/WebFlux `@ConditionalOnClass` names, `@AutoConfigureAfter`, and the exact `@ConditionalOnMissingBean(name = [...])` sentinel arrays. In `AutoConfigurationSelectionTest.kt`, also write failing import-order, non-web, selected-stack-only, dual-API explicit-type, and missing-method-security-class condition tests.
+- [ ] T003 Write the failing MVC method-security context test for the `_prePostMethodSecurityConfiguration` marker, absent reactive markers, and continued activation when an application owns `SecurityFilterChain` in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/security/SecurityAutoConfigurationContextTest.kt`.
+- [ ] T004 Write the failing WebFlux method-security context test for the `_reactiveMethodSecurityConfiguration` marker, absent MVC markers, and continued activation when an application owns `SecurityWebFilterChain` in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/security/SecurityAutoConfigurationContextTest.kt`.
+- [ ] T005 Write failing disabled-security and matching manual-enablement back-off context tests, proving `security.enabled=false` removes the selected platform method infrastructure and application-owned method security avoids duplicate infrastructure. Cover MVC sentinels `_prePostMethodSecurityConfiguration`, `_securedMethodSecurityConfiguration`, `_jsr250MethodSecurityConfiguration`; reactive authorization-manager sentinel `_reactiveMethodSecurityConfiguration`; and legacy reactive sentinels `reactiveMethodSecurityConfiguration` and `methodSecurityInterceptor`. Also prove that an application-owned web chain alone does not trigger method-security back-off in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/security/SecurityAutoConfigurationContextTest.kt`.
 - [ ] T006 [P] Extend the selected Servlet disabled-security capability test to assert the MVC method-security marker is absent while tracing, metrics, errors, logging, and correlation stay active in `logistics-parent-service-autoconfigure/src/test/kotlin/com/hz/logistics/parentservice/autoconfigure/CapabilityBackOffTest.kt`.
 
 ---
@@ -41,8 +41,8 @@ description: "Actionable task list for automatic MVC and WebFlux method-security
 
 ### Tests for User Story 1
 
-- [ ] T007 [US1] Write failing MVC integration tests using fixture service/controller types with no explicit `@EnableMethodSecurity` for `@PreAuthorize`, `@PostAuthorize`, `@PreFilter`, `@PostFilter`, `@Secured`, `@RolesAllowed`, `@PermitAll`, and `@DenyAll` in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/MvcSecurityIntegrationTest.kt`.
-- [ ] T008 [P] [US1] Remove the fixture `@EnableMethodSecurity` and retain failing automatic-method-security ProblemDetail denial coverage in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/errors/MvcProblemDetailIntegrationTest.kt`.
+- [ ] T007 [US1] Write failing MVC integration tests using fixture service/controller types with no explicit `@EnableMethodSecurity` for `@PreAuthorize`, `@PostAuthorize`, `@PreFilter`, `@PostFilter`, `@Secured`, `@RolesAllowed`, `@PermitAll`, and `@DenyAll` in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/MvcSecurityIntegrationTest.kt`. Include collection filtering with partial matches and the no-match case: the service receives an empty pre-filtered collection, the response is an empty post-filtered collection, and no unauthorized element reaches or leaves the service.
+- [ ] T008 [P] [US1] Remove the fixture `@EnableMethodSecurity` and retain failing automatic-method-security ProblemDetail denial coverage in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/errors/MvcProblemDetailIntegrationTest.kt`. Assert `403`, `application/problem+json`, nonblank `type`/`title`/`detail`, matching `status`/`instance`, and a 32-character hexadecimal `traceId`.
 
 ---
 
@@ -54,8 +54,8 @@ description: "Actionable task list for automatic MVC and WebFlux method-security
 
 ### Tests for User Story 2
 
-- [ ] T009 [US2] Write failing WebFlux integration tests using fixture service/controller types with no explicit `@EnableReactiveMethodSecurity` for publisher-returning `@PreAuthorize` and `@PostAuthorize`, including delayed, empty, and scheduled Reactor-context cases in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/WebFluxSecurityIntegrationTest.kt`.
-- [ ] T010 [P] [US2] Remove the incorrect fixture `@EnableMethodSecurity` and retain failing reactive automatic-method-security ProblemDetail denial coverage in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/errors/WebFluxProblemDetailIntegrationTest.kt`.
+- [ ] T009 [US2] Write failing WebFlux integration tests using fixture service/controller types with no explicit `@EnableReactiveMethodSecurity` for publisher-returning `@PreAuthorize` and `@PostAuthorize` in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/WebFluxSecurityIntegrationTest.kt`. Include delayed, empty, and scheduled Reactor-context cases with explicit assertions for authorized values, empty completion, retained context, and missing-authority rejection.
+- [ ] T010 [P] [US2] Remove the incorrect fixture `@EnableMethodSecurity` and retain failing reactive automatic-method-security ProblemDetail denial coverage in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/errors/WebFluxProblemDetailIntegrationTest.kt`. Assert `403`, `application/problem+json`, nonblank `type`/`title`/`detail`, matching `status`/`instance`, and a 32-character hexadecimal `traceId`.
 
 ---
 
@@ -80,8 +80,8 @@ description: "Actionable task list for automatic MVC and WebFlux method-security
 
 ### Tests for User Story 4
 
-- [ ] T013 [US4] Write failing MVC role-based and scope/permission-based method-expression integration tests for configured nested roles, default/custom prefixes, and both `scope` and `scp` claims, including missing-authority rejection, in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/MvcSecurityIntegrationTest.kt`.
-- [ ] T014 [US4] Write failing WebFlux role-based and scope/permission-based method-expression integration tests for configured nested roles, default/custom prefixes, and both `scope` and `scp` claims, including missing-authority rejection, in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/WebFluxSecurityIntegrationTest.kt`.
+- [ ] T013 [US4] Write failing MVC role-based and scope/permission-based method-expression integration tests for configured nested roles, the default `ROLE_` prefix, the existing custom `APP_` prefix, and both `scope` and `scp` claims, including missing-authority rejection, in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/MvcSecurityIntegrationTest.kt`.
+- [ ] T014 [US4] Write failing WebFlux role-based and scope/permission-based method-expression integration tests for configured nested roles, the default `ROLE_` prefix, the existing custom `APP_` prefix, and both `scope` and `scp` claims, including missing-authority rejection, in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/WebFluxSecurityIntegrationTest.kt`.
 
 ---
 
@@ -89,9 +89,9 @@ description: "Actionable task list for automatic MVC and WebFlux method-security
 
 **Purpose**: Add the minimum stack-isolated production configuration only after tasks T002–T014 are present and failing.
 
-- [ ] T015 Run the newly added focused unit, MVC, and WebFlux tests to confirm they fail before production implementation, using the commands in `specs/002-method-security-auto-configuration/quickstart.md`.
-- [ ] T016 [US1] Implement MVC automatic method security with `@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)`, Servlet/class/property conditions, matching manual-owner sentinels, and ordering after MVC web security in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/security/mvc/PlatformMvcMethodSecurityAutoConfiguration.kt`.
-- [ ] T017 [US2] Implement reactive automatic method security with `@EnableReactiveMethodSecurity`, Reactive/class/property conditions, matching manual-owner sentinels, and ordering after WebFlux web security in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/security/reactive/PlatformWebFluxMethodSecurityAutoConfiguration.kt`.
+- [ ] T015 Run the newly added unit, auto-configuration/context, MVC, and WebFlux tests to confirm they fail before production implementation, using the commands in `specs/002-method-security-auto-configuration/quickstart.md`.
+- [ ] T016 [US1] Implement MVC automatic method security with `@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)`, `SERVLET`/property conditions, exact classpath names from `plan.md`, and missing-bean guards that back off if any of `_prePostMethodSecurityConfiguration`, `_securedMethodSecurityConfiguration`, or `_jsr250MethodSecurityConfiguration` is present. Do not condition on `SecurityFilterChain`; order after MVC web security in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/security/mvc/PlatformMvcMethodSecurityAutoConfiguration.kt`.
+- [ ] T017 [US2] Implement reactive automatic method security with `@EnableReactiveMethodSecurity`, `REACTIVE`/property conditions, exact classpath names from `plan.md`, and missing-bean guards that back off if any of `_reactiveMethodSecurityConfiguration`, `reactiveMethodSecurityConfiguration`, or `methodSecurityInterceptor` is present. Do not condition on `SecurityWebFilterChain`; order after WebFlux web security in `logistics-parent-service-autoconfigure/src/main/kotlin/com/hz/logistics/parentservice/autoconfigure/security/reactive/PlatformWebFluxMethodSecurityAutoConfiguration.kt`.
 - [ ] T018 Register the MVC and WebFlux method-security auto-configurations immediately after their matching web-security entries in `logistics-parent-service-autoconfigure/src/main/resources/META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports`.
 
 ---
@@ -109,11 +109,11 @@ description: "Actionable task list for automatic MVC and WebFlux method-security
 
 ## Phase 9: Validation
 
-**Purpose**: Prove the focused acceptance matrix and the complete repository regression gate after implementation and documentation are complete.
+**Purpose**: Prove the focused acceptance matrix after implementation. These validations may run in parallel with documentation; the complete repository regression gate waits for both.
 
-- [ ] T023 Run the focused auto-configuration/context Gradle tests for selection, method-security markers, disabled security, and back-off using `specs/002-method-security-auto-configuration/quickstart.md`.
-- [ ] T024 Run the focused MVC Gradle integration tests for automatic annotation coverage, role/scope decisions, layered `200`/`401`/`403` behavior, custom chain ownership, and disabled security using `specs/002-method-security-auto-configuration/quickstart.md`.
-- [ ] T025 Run the focused WebFlux Gradle integration tests for reactive context propagation, role/scope decisions, layered `200`/`401`/`403` behavior, custom chain ownership, and disabled security using `specs/002-method-security-auto-configuration/quickstart.md`.
+- [ ] T023 [P] Run the focused unit and auto-configuration/context Gradle tests for exact annotation metadata, stack selection, method-security markers, disabled security, matching manual-enablement back-off, web-chain independence, and missing-class conditions using `specs/002-method-security-auto-configuration/quickstart.md`.
+- [ ] T024 [P] Run the focused MVC Gradle integration tests for automatic annotation coverage including no-match filtering, role/scope decisions, matching manual enablement, ProblemDetail fields/traceId, layered `200`/`401`/`403` behavior, custom-chain ownership, and disabled security using `specs/002-method-security-auto-configuration/quickstart.md`.
+- [ ] T025 [P] Run the focused WebFlux Gradle integration tests for reactive delayed/empty/scheduled context propagation, role/scope decisions, matching manual enablement, ProblemDetail fields/traceId, layered `200`/`401`/`403` behavior, custom-chain ownership, and disabled security using `specs/002-method-security-auto-configuration/quickstart.md`.
 - [ ] T026 Run the full `./gradlew check` regression gate after documentation and focused validations pass, using the root build definition in `build.gradle.kts`.
 
 ---
@@ -128,19 +128,18 @@ T001 (setup)
         └── T015 (red-test confirmation)
               ├── T016 (MVC implementation) ─┐
               └── T017 (WebFlux implementation) ─┼── T018 (imports registry)
-                                                   └── T019–T022 (documentation)
-                                                         └── T023–T025 (focused Gradle validation)
-                                                               └── T026 (full Gradle check)
+                                                   ├── T019–T022 (documentation) ───────┐
+                                                   └── T023–T025 (focused Gradle validation) ─┼── T026 (full Gradle check)
 ```
 
 ### Task dependencies
 
 - T002 and T006 can start after T001; T003–T005 are sequential changes to the same context-test file.
 - T007–T014 start after T002–T006 define the shared selection and context expectations; they are intentionally complete before T015 so no production task masks a missing test.
-- T016 depends on T003, T005, T007, T008, T011, T013, and T015; T017 depends on T004, T005, T009, T010, T012, T014, and T015.
+- T016 depends on T002, T003, T005, T007, T008, T011, T013, and T015; T017 depends on T002, T004, T005, T009, T010, T012, T014, and T015.
 - T018 depends on T002, T016, and T017.
-- T019–T022 depend on T018 and define the documentation criteria that the focused validation must prove.
-- T023–T025 depend on T018 and T019–T022, and are independent focused validation commands; T026 depends on T019–T025.
+- T019–T022 depend on T018 and define the documentation criteria that the release review must publish.
+- T023–T025 depend only on T018 and are independent focused validation commands; T026 depends on T019–T025.
 
 ### User-story dependencies
 
@@ -155,19 +154,19 @@ T001 (setup)
 - T008 and T010 can run concurrently with their main-stack test work because they modify independent ProblemDetail suites.
 - T016 and T017 can run concurrently after T015 because they create isolated MVC and WebFlux source files.
 - T019–T022 can run concurrently once T018 is complete because they target separate documentation files.
-- T023–T025 can run concurrently after T019–T022; each invokes a distinct focused Gradle test target.
+- T023–T025 can run concurrently after T018 and in parallel with T019–T022; each invokes a distinct focused Gradle test target.
 
 ## Implementation Strategy
 
 ### MVP first
 
 1. Complete T001–T015 to establish the full red test suite before any auto-configuration is added.
-2. Complete T016–T018 as the atomic stack-isolated platform installation, then use T023 and T024 to validate the MVC contract independently.
-3. Complete the remaining documentation and both-stack regression work through T026 before release.
+2. Complete T016–T018 as the atomic stack-isolated platform installation, then use T023–T025 to validate the implementation independently of documentation.
+3. Complete the documentation and both-stack regression work through T026 before release.
 
 ### Incremental delivery
 
 1. Establish selected-stack and disabled/back-off behavior with T001–T006.
 2. Add all MVC and WebFlux acceptance tests (T007–T014) and prove the red state (T015).
 3. Add the two isolated configurations and registry entry (T016–T018).
-4. Publish the stable contract and validate the complete suite (T019–T026).
+4. Publish the stable contract, complete focused validation, and run the repository gate (T019–T026).
