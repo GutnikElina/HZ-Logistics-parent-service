@@ -13,6 +13,8 @@ import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
+import org.springframework.security.access.prepost.PostAuthorize
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.core.Authentication
 import org.springframework.security.oauth2.jwt.BadJwtException
@@ -21,7 +23,11 @@ import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.stereotype.Service
+import org.springframework.security.core.context.ReactiveSecurityContextHolder
 import reactor.core.publisher.Mono
+import reactor.core.scheduler.Schedulers
+import java.time.Duration
 
 @SpringBootTest(
     classes = [WebFluxSecurityFixtureApplication::class],
@@ -80,6 +86,56 @@ class WebFluxSecurityIntegrationTest(
             .expectStatus().isOk
             .expectBody()
             .jsonPath("$.authorities[0]").isEqualTo("ROLE_driver")
+    }
+
+    @Test
+    fun `automatically authorizes delayed empty and scheduled reactive publishers`() {
+        webTestClient.get().uri("/methods/reactive/pre-delayed")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer valid")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody(String::class.java).isEqualTo("pre-authorized")
+
+        webTestClient.get().uri("/methods/reactive/pre-empty")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer valid")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody().isEmpty
+
+        webTestClient.get().uri("/methods/reactive/post-scheduled")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer valid")
+            .exchange()
+            .expectStatus().isOk
+            .expectBody(String::class.java).isEqualTo("ROLE_dispatcher")
+
+        webTestClient.get().uri("/methods/reactive/pre-delayed")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer missing-role")
+            .exchange()
+            .expectStatus().isForbidden
+    }
+
+    @Test
+    fun `reuses mapped WebFlux role and scope authorities in method expressions`() {
+        webTestClient.get().uri("/methods/default-role")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer valid")
+            .exchange()
+            .expectStatus().isOk
+        webTestClient.get().uri("/methods/default-role")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer missing-role")
+            .exchange()
+            .expectStatus().isForbidden
+        webTestClient.get().uri("/methods/scope")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer scope")
+            .exchange()
+            .expectStatus().isOk
+        webTestClient.get().uri("/methods/scope")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer scp")
+            .exchange()
+            .expectStatus().isOk
+        webTestClient.get().uri("/methods/scope")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer missing-permission")
+            .exchange()
+            .expectStatus().isForbidden
     }
 
     @Test
@@ -144,6 +200,15 @@ class WebFluxSecurityCustomPrefixIntegrationTest(
             .expectBody()
             .jsonPath("$.authorities[0]").isEqualTo("APP_dispatcher")
             .jsonPath("$.authorities[1]").isEqualTo("APP_planner")
+
+        webTestClient.get().uri("/methods/custom-role")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer valid")
+            .exchange()
+            .expectStatus().isOk
+        webTestClient.get().uri("/methods/custom-role")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer missing-role")
+            .exchange()
+            .expectStatus().isForbidden
     }
 }
 
@@ -194,13 +259,43 @@ class WebFluxApplicationOwnedSecurityIntegrationTest(
     @Test
     fun `backs off platform WebFlux security when the application supplies its own chain`() {
         assertThat(securityWebFilterChains).containsOnlyKeys("applicationSecurityWebFilterChain")
-        webTestClient.get().uri("/protected").exchange().expectStatus().isOk
+        webTestClient.get().uri("/methods/default-role")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer valid")
+            .exchange()
+            .expectStatus().isOk
+        webTestClient.get().uri("/methods/default-role")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer missing-role")
+            .exchange()
+            .expectStatus().isForbidden
+        webTestClient.get().uri("/methods/default-role").exchange().expectStatus().isUnauthorized
+    }
+}
+
+@SpringBootTest(
+    classes = [WebFluxSecurityDisabledFixtureApplication::class],
+    webEnvironment = WebEnvironment.RANDOM_PORT,
+    properties = ["logistics.parent-service.security.enabled=false"],
+)
+class WebFluxSecurityDisabledMethodIntegrationTest {
+
+    @LocalServerPort
+    private var port: Int = 0
+
+    private val webTestClient: WebTestClient by lazy {
+        WebTestClient.bindToServer().baseUrl("http://localhost:$port").build()
+    }
+
+    @Test
+    fun `does not enforce annotated reactive methods when platform security is disabled`() {
+        webTestClient.get().uri("/methods/default-role")
+            .exchange()
+            .expectStatus().isOk
     }
 }
 
 @SpringBootConfiguration(proxyBeanMethods = false)
 @EnableAutoConfiguration
-@Import(WebFluxSecurityFixtureController::class)
+@Import(WebFluxSecurityFixtureController::class, WebFluxMethodSecurityFixtureController::class, WebFluxMethodSecurityFixture::class)
 class WebFluxSecurityFixtureApplication {
 
     @Bean
@@ -219,6 +314,30 @@ class WebFluxSecurityFixtureApplication {
                         claims = mapOf("realm_access" to mapOf("roles" to "driver")),
                     ),
                 )
+                "missing-role" -> Mono.just(
+                    mockJwt(
+                        tokenValue = token,
+                        claims = mapOf("realm_access" to mapOf("roles" to listOf("planner"))),
+                    ),
+                )
+                "scope-only", "scope" -> Mono.just(
+                    mockJwt(
+                        tokenValue = token,
+                        claims = mapOf("scope" to "shipments.read"),
+                    ),
+                )
+                "scp" -> Mono.just(
+                    mockJwt(
+                        tokenValue = token,
+                        claims = mapOf("scp" to listOf("shipments.read")),
+                    ),
+                )
+                "missing-permission" -> Mono.just(
+                    mockJwt(
+                        tokenValue = token,
+                        claims = mapOf("scope" to "shipments.write"),
+                    ),
+                )
                 "invalid-signature" -> Mono.error(BadJwtException("invalid signature"))
                 "expired" -> Mono.error(BadJwtException("token expired"))
                 "issuer-mismatch" -> Mono.error(BadJwtException("issuer mismatch"))
@@ -229,8 +348,30 @@ class WebFluxSecurityFixtureApplication {
 
 @SpringBootConfiguration(proxyBeanMethods = false)
 @EnableAutoConfiguration
-@Import(WebFluxSecurityFixtureController::class)
+@Import(WebFluxSecurityFixtureController::class, WebFluxMethodSecurityFixtureController::class, WebFluxMethodSecurityFixture::class)
 class WebFluxApplicationOwnedSecurityFixtureApplication {
+
+    @Bean
+    fun reactiveJwtDecoder(): ReactiveJwtDecoder = WebFluxSecurityFixtureApplication().reactiveJwtDecoder()
+
+    @Bean
+    fun applicationSecurityWebFilterChain(
+        http: ServerHttpSecurity,
+        reactiveJwtDecoder: ReactiveJwtDecoder,
+    ): SecurityWebFilterChain =
+        http
+            .csrf { it.disable() }
+            .authorizeExchange { it.anyExchange().authenticated() }
+            .oauth2ResourceServer { resourceServer ->
+                resourceServer.jwt { jwt -> jwt.jwtDecoder(reactiveJwtDecoder) }
+            }
+            .build()
+}
+
+@SpringBootConfiguration(proxyBeanMethods = false)
+@EnableAutoConfiguration
+@Import(WebFluxMethodSecurityFixtureController::class, WebFluxMethodSecurityFixture::class)
+class WebFluxSecurityDisabledFixtureApplication {
 
     @Bean
     fun applicationSecurityWebFilterChain(http: ServerHttpSecurity): SecurityWebFilterChain =
@@ -246,4 +387,62 @@ class WebFluxSecurityFixtureController {
     @GetMapping("/protected")
     fun protectedEndpoint(authentication: Authentication?): Mono<Map<String, List<String>>> =
         Mono.just(mapOf("authorities" to authentication?.authorities?.mapNotNull { it.authority }.orEmpty()))
+}
+
+@RestController
+class WebFluxMethodSecurityFixtureController(
+    private val methodSecurityFixture: WebFluxMethodSecurityFixture,
+) {
+
+    @GetMapping("/methods/reactive/pre-delayed")
+    fun preDelayed(): Mono<String> = methodSecurityFixture.preDelayed()
+
+    @GetMapping("/methods/reactive/pre-empty")
+    fun preEmpty(): Mono<String> = methodSecurityFixture.preEmpty()
+
+    @GetMapping("/methods/reactive/post-scheduled")
+    fun postScheduled(): Mono<String> = methodSecurityFixture.postScheduled()
+
+    @GetMapping("/methods/default-role")
+    fun defaultRole(): Mono<String> = methodSecurityFixture.defaultRole()
+
+    @GetMapping("/methods/custom-role")
+    fun customRole(): Mono<String> = methodSecurityFixture.customRole()
+
+    @GetMapping("/methods/scope")
+    fun scope(): Mono<String> = methodSecurityFixture.scope()
+}
+
+@Service
+class WebFluxMethodSecurityFixture {
+
+    @PreAuthorize("hasAuthority('ROLE_dispatcher')")
+    fun preDelayed(): Mono<String> =
+        Mono.delay(Duration.ofMillis(10)).thenReturn("pre-authorized")
+
+    @PreAuthorize("hasAuthority('ROLE_dispatcher')")
+    fun preEmpty(): Mono<String> = Mono.empty()
+
+    @PostAuthorize("hasAuthority('ROLE_dispatcher')")
+    fun postScheduled(): Mono<String> =
+        Mono.deferContextual {
+            ReactiveSecurityContextHolder.getContext()
+                .map { securityContext ->
+                    securityContext.authentication?.authorities.orEmpty()
+                        .mapNotNull { it.authority }
+                        .singleOrNull { it == "ROLE_dispatcher" }
+                        ?: "missing-context"
+                }
+                .defaultIfEmpty("missing-context")
+        }
+            .subscribeOn(Schedulers.boundedElastic())
+
+    @PreAuthorize("hasAuthority('ROLE_dispatcher')")
+    fun defaultRole(): Mono<String> = Mono.just("default-role")
+
+    @PreAuthorize("hasAuthority('APP_dispatcher')")
+    fun customRole(): Mono<String> = Mono.just("custom-role")
+
+    @PreAuthorize("hasAuthority('SCOPE_shipments.read')")
+    fun scope(): Mono<String> = Mono.just("scope")
 }

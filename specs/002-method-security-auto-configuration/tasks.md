@@ -41,8 +41,8 @@ description: "Actionable task list for automatic MVC and WebFlux method-security
 
 ### Tests for User Story 1
 
-- [ ] T007 [US1] Write failing MVC integration tests using fixture service/controller types with no explicit `@EnableMethodSecurity` for `@PreAuthorize`, `@PostAuthorize`, `@PreFilter`, `@PostFilter`, `@Secured`, `@RolesAllowed`, `@PermitAll`, and `@DenyAll` in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/MvcSecurityIntegrationTest.kt`. Include collection filtering with partial matches and the no-match case: the service receives an empty pre-filtered collection, the response is an empty post-filtered collection, and no unauthorized element reaches or leaves the service.
-- [ ] T008 [P] [US1] Remove the fixture `@EnableMethodSecurity` and retain failing automatic-method-security ProblemDetail denial coverage in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/errors/MvcProblemDetailIntegrationTest.kt`. Assert `403`, `application/problem+json`, nonblank `type`/`title`/`detail`, matching `status`/`instance`, and a 32-character hexadecimal `traceId`.
+- [X] T007 [US1] Write failing MVC integration tests using fixture service/controller types with no explicit `@EnableMethodSecurity` for `@PreAuthorize`, `@PostAuthorize`, `@PreFilter`, `@PostFilter`, `@Secured`, `@RolesAllowed`, `@PermitAll`, and `@DenyAll` in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/MvcSecurityIntegrationTest.kt`. Include collection filtering with partial matches and the no-match case: the service receives an empty pre-filtered collection, the response is an empty post-filtered collection, and no unauthorized element reaches or leaves the service.
+- [X] T008 [P] [US1] Remove the fixture `@EnableMethodSecurity` and retain failing automatic-method-security ProblemDetail denial coverage in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/errors/MvcProblemDetailIntegrationTest.kt`. Assert `403`, `application/problem+json`, nonblank `type`/`title`/`detail`, matching `status`/`instance`, and a 32-character hexadecimal `traceId`.
 
 ---
 
@@ -54,8 +54,8 @@ description: "Actionable task list for automatic MVC and WebFlux method-security
 
 ### Tests for User Story 2
 
-- [ ] T009 [US2] Write failing WebFlux integration tests using fixture service/controller types with no explicit `@EnableReactiveMethodSecurity` for publisher-returning `@PreAuthorize` and `@PostAuthorize` in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/WebFluxSecurityIntegrationTest.kt`. Include delayed, empty, and scheduled Reactor-context cases with explicit assertions for authorized values, empty completion, retained context, and missing-authority rejection.
-- [ ] T010 [P] [US2] Remove the incorrect fixture `@EnableMethodSecurity` and retain failing reactive automatic-method-security ProblemDetail denial coverage in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/errors/WebFluxProblemDetailIntegrationTest.kt`. Assert `403`, `application/problem+json`, nonblank `type`/`title`/`detail`, matching `status`/`instance`, and a 32-character hexadecimal `traceId`.
+- [X] T009 [US2] Write failing WebFlux integration tests using fixture service/controller types with no explicit `@EnableReactiveMethodSecurity` for publisher-returning `@PreAuthorize` and `@PostAuthorize` in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/WebFluxSecurityIntegrationTest.kt`. Include delayed, empty, and scheduled Reactor-context cases with explicit assertions for authorized values, empty completion, retained context, and missing-authority rejection.
+- [X] T010 [P] [US2] Remove the incorrect fixture `@EnableMethodSecurity` and retain failing reactive automatic-method-security ProblemDetail denial coverage in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/errors/WebFluxProblemDetailIntegrationTest.kt`. Assert `403`, `application/problem+json`, nonblank `type`/`title`/`detail`, matching `status`/`instance`, and a 32-character hexadecimal `traceId`.
 
 ---
 
@@ -67,8 +67,8 @@ description: "Actionable task list for automatic MVC and WebFlux method-security
 
 ### Tests for User Story 3
 
-- [ ] T011 [US3] Write failing MVC integration tests for the `200`/`403`/`401` authorization matrix, a bearer-authenticating application-owned `SecurityFilterChain` that backs off only the platform chain, and an annotated method that executes with `security.enabled=false` under application-owned permit-all security in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/MvcSecurityIntegrationTest.kt`.
-- [ ] T012 [US3] Write failing WebFlux integration tests for the `200`/`403`/`401` authorization matrix, a bearer-authenticating application-owned `SecurityWebFilterChain` that backs off only the platform chain, and an annotated method that executes with `security.enabled=false` under application-owned permit-all security in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/WebFluxSecurityIntegrationTest.kt`.
+- [X] T011 [US3] Write failing MVC integration tests for the `200`/`403`/`401` authorization matrix, a bearer-authenticating application-owned `SecurityFilterChain` that backs off only the platform chain, and an annotated method that executes with `security.enabled=false` under application-owned permit-all security in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/MvcSecurityIntegrationTest.kt`.
+- [X] T012 [US3] Write failing WebFlux integration tests for the `200`/`403`/`401` authorization matrix, a bearer-authenticating application-owned `SecurityWebFilterChain` that backs off only the platform chain, and an annotated method that executes with `security.enabled=false` under application-owned permit-all security in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/WebFluxSecurityIntegrationTest.kt`.
 
 ---
 
@@ -80,8 +80,8 @@ description: "Actionable task list for automatic MVC and WebFlux method-security
 
 ### Tests for User Story 4
 
-- [ ] T013 [US4] Write failing MVC role-based and scope/permission-based method-expression integration tests for configured nested roles, the default `ROLE_` prefix, the existing custom `APP_` prefix, and both `scope` and `scp` claims, including missing-authority rejection, in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/MvcSecurityIntegrationTest.kt`.
-- [ ] T014 [US4] Write failing WebFlux role-based and scope/permission-based method-expression integration tests for configured nested roles, the default `ROLE_` prefix, the existing custom `APP_` prefix, and both `scope` and `scp` claims, including missing-authority rejection, in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/WebFluxSecurityIntegrationTest.kt`.
+- [X] T013 [US4] Write failing MVC role-based and scope/permission-based method-expression integration tests for configured nested roles, the default `ROLE_` prefix, the existing custom `APP_` prefix, and both `scope` and `scp` claims, including missing-authority rejection, in `logistics-parent-service-autoconfigure/src/mvcIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/MvcSecurityIntegrationTest.kt`.
+- [X] T014 [US4] Write failing WebFlux role-based and scope/permission-based method-expression integration tests for configured nested roles, the default `ROLE_` prefix, the existing custom `APP_` prefix, and both `scope` and `scp` claims, including missing-authority rejection, in `logistics-parent-service-autoconfigure/src/webfluxIntegrationTest/kotlin/com/hz/logistics/parentservice/autoconfigure/security/WebFluxSecurityIntegrationTest.kt`.
 
 ---
 
@@ -175,3 +175,10 @@ T001 (setup)
 
 - [ ] T027 Add filtered-classloader condition cases for every MVC and WebFlux class listed in the plan's `@ConditionalOnClass` contract, asserting that the corresponding method-security auto-configuration safely backs off when each individual required class is absent per plan: classpath conditions (partial)
 - [ ] T028 Add isolated matching manual-enablement context cases for each MVC sentinel and for the reactive authorization-manager and legacy sentinel variants, asserting that the selected platform method-security auto-configuration backs off without duplicate infrastructure while a web-chain bean alone remains a full match per FR-015 (partial)
+
+## Phase 11: Convergence
+
+- [ ] T029 Implement the MVC automatic method-security auto-configuration with the selected Servlet/property conditions, required classpath guards, matching manual-enablement sentinels, and enabled annotation families so the phase 3 MVC authorization, phase 5 layered-chain, and phase 6 mapped-authority scenarios execute per US1/AC1–4 and FR-002 (missing)
+- [ ] T030 Implement the WebFlux automatic method-security auto-configuration with the selected Reactive/property conditions, required classpath guards, matching manual-enablement sentinels, and publisher-aware authorization so the phase 4 reactive, phase 5 layered-chain, and phase 6 mapped-authority scenarios execute per US2/AC1–3 and FR-003 (missing)
+- [ ] T031 Register the MVC and WebFlux method-security auto-configurations immediately after their matching web-security entries in the imports registry so selected-stack activation and isolation are discoverable per the plan ordering decision and FR-001/FR-004 (missing)
+- [ ] T032 Add a WebFlux integration assertion that a token missing the required authority is rejected on a publisher-returning `@PostAuthorize` method, complementing the existing successful path per US2/AC1 (partial)
