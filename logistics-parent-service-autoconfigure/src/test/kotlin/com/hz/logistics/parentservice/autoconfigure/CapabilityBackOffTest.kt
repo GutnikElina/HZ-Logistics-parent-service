@@ -11,6 +11,7 @@ import io.micrometer.core.instrument.simple.SimpleMeterRegistry
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
+import org.springframework.boot.autoconfigure.condition.ConditionEvaluationReport
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner
 import org.springframework.context.annotation.Bean
@@ -89,6 +90,9 @@ class CapabilityBackOffTest {
             .run { context ->
                 assertThat(context).hasNotFailed()
                 assertThat(context).doesNotHaveBean("platformMvcSecurityFilterChain")
+                assertThat(context).doesNotHaveBean("_prePostMethodSecurityConfiguration")
+                assertThat(ConditionEvaluationReport.get(context.beanFactory).conditionAndOutcomesBySource)
+                    .containsKey(MVC_METHOD_SECURITY_AUTO_CONFIGURATION)
                 assertThat(context).hasBean("platformTracingSampler")
                 assertThat(context).hasSingleBean(PlatformMetricsCustomizer::class.java)
                 assertThat(context).hasSingleBean(PlatformProblemDetailFactory::class.java)
@@ -158,6 +162,11 @@ class CapabilityBackOffTest {
         Counter.builder("backoff.active").register(registry).increment()
         assertThat(registry.find("backoff.active").counter()?.id?.tags)
             .anyMatch { it.key == "platform" && it.value == "shared" }
+    }
+
+    private companion object {
+        const val MVC_METHOD_SECURITY_AUTO_CONFIGURATION =
+            "com.hz.logistics.parentservice.autoconfigure.security.mvc.PlatformMvcMethodSecurityAutoConfiguration"
     }
 }
 

@@ -8,10 +8,13 @@ import com.hz.logistics.parentservice.autoconfigure.security.reactive.PlatformWe
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.boot.autoconfigure.AutoConfigurations
+import org.springframework.boot.autoconfigure.condition.ConditionEvaluationReport
 import org.springframework.boot.test.context.runner.ReactiveWebApplicationContextRunner
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
+import org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity
 import org.springframework.core.convert.converter.Converter
 import org.springframework.security.authentication.AbstractAuthenticationToken
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -60,6 +63,28 @@ class SecurityAutoConfigurationContextTest {
     }
 
     @Test
+    fun `creates MVC method security only for the selected Servlet stack`() {
+        mvcRunner().run { context ->
+            assertThat(context).hasNotFailed()
+            assertThat(context).hasBean(MVC_METHOD_SECURITY_PRE_POST_SENTINEL)
+            assertThat(context).doesNotHaveBean(REACTIVE_METHOD_SECURITY_SENTINEL)
+            assertThat(context).doesNotHaveBean(LEGACY_REACTIVE_METHOD_SECURITY_CONFIGURATION)
+            assertThat(context).doesNotHaveBean(LEGACY_METHOD_SECURITY_INTERCEPTOR)
+        }
+    }
+
+    @Test
+    fun `creates reactive method security only for the selected WebFlux stack`() {
+        webFluxRunner().run { context ->
+            assertThat(context).hasNotFailed()
+            assertThat(context).hasBean(REACTIVE_METHOD_SECURITY_SENTINEL)
+            assertThat(context).doesNotHaveBean(MVC_METHOD_SECURITY_PRE_POST_SENTINEL)
+            assertThat(context).doesNotHaveBean(MVC_METHOD_SECURITY_SECURED_SENTINEL)
+            assertThat(context).doesNotHaveBean(MVC_METHOD_SECURITY_JSR250_SENTINEL)
+        }
+    }
+
+    @Test
     fun `fails selected stack startup without a valid issuer`() {
         mvcRunner().withoutIssuer().run { context ->
             assertThat(context).hasFailed()
@@ -88,6 +113,8 @@ class SecurityAutoConfigurationContextTest {
                 assertThat(context).hasNotFailed()
                 assertThat(context).hasSingleBean(SecurityFilterChain::class.java)
                 assertThat(context).hasBean("applicationSecurityFilterChain")
+                assertThat(context).hasBean(MVC_METHOD_SECURITY_PRE_POST_SENTINEL)
+                assertThat(isFullMatch(context, MVC_METHOD_SECURITY_AUTO_CONFIGURATION)).isTrue()
             }
 
         webFluxRunner()
@@ -97,6 +124,53 @@ class SecurityAutoConfigurationContextTest {
                 assertThat(context).hasNotFailed()
                 assertThat(context).hasSingleBean(SecurityWebFilterChain::class.java)
                 assertThat(context).hasBean("applicationSecurityWebFilterChain")
+                assertThat(context).hasBean(REACTIVE_METHOD_SECURITY_SENTINEL)
+                assertThat(isFullMatch(context, WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION)).isTrue()
+            }
+    }
+
+    @Test
+    fun `backs off MVC method security for an application owned matching enablement`() {
+        mvcRunner()
+            .withUserConfiguration(MvcApplicationSecurityConfiguration::class.java, MvcManualMethodSecurityConfiguration::class.java)
+            .withoutIssuer()
+            .run { context ->
+                assertThat(context).hasNotFailed()
+                assertThat(context).hasBean(MVC_METHOD_SECURITY_PRE_POST_SENTINEL)
+                assertThat(context).hasBean(MVC_METHOD_SECURITY_SECURED_SENTINEL)
+                assertThat(context).hasBean(MVC_METHOD_SECURITY_JSR250_SENTINEL)
+                assertThat(isFullMatch(context, MVC_METHOD_SECURITY_AUTO_CONFIGURATION)).isFalse()
+            }
+    }
+
+    @Test
+    fun `backs off reactive authorization-manager method security for matching manual enablement`() {
+        webFluxRunner()
+            .withUserConfiguration(
+                WebFluxApplicationSecurityConfiguration::class.java,
+                WebFluxManualMethodSecurityConfiguration::class.java,
+            )
+            .withoutIssuer()
+            .run { context ->
+                assertThat(context).hasNotFailed()
+                assertThat(context).hasBean(REACTIVE_METHOD_SECURITY_SENTINEL)
+                assertThat(isFullMatch(context, WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION)).isFalse()
+            }
+    }
+
+    @Test
+    fun `backs off reactive legacy method security for any matching legacy sentinel`() {
+        webFluxRunner()
+            .withUserConfiguration(
+                WebFluxApplicationSecurityConfiguration::class.java,
+                WebFluxLegacyManualMethodSecurityConfiguration::class.java,
+            )
+            .withoutIssuer()
+            .run { context ->
+                assertThat(context).hasNotFailed()
+                assertThat(context).hasBean(LEGACY_REACTIVE_METHOD_SECURITY_CONFIGURATION)
+                assertThat(context).hasBean(LEGACY_METHOD_SECURITY_INTERCEPTOR)
+                assertThat(isFullMatch(context, WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION)).isFalse()
             }
     }
 
@@ -157,6 +231,18 @@ class SecurityAutoConfigurationContextTest {
             .run { context ->
                 assertThat(context).hasNotFailed()
                 assertThat(context).doesNotHaveBean(SecurityFilterChain::class.java)
+                assertThat(context).doesNotHaveBean(MVC_METHOD_SECURITY_PRE_POST_SENTINEL)
+                assertThat(context).hasSingleBean(PlatformCorrelationContext::class.java)
+                assertThat(context).hasSingleBean(PlatformProblemDetailFactory::class.java)
+            }
+
+        webFluxRunner()
+            .withoutIssuer()
+            .withPropertyValues("logistics.parent-service.security.enabled=false")
+            .run { context ->
+                assertThat(context).hasNotFailed()
+                assertThat(context).doesNotHaveBean(SecurityWebFilterChain::class.java)
+                assertThat(context).doesNotHaveBean(REACTIVE_METHOD_SECURITY_SENTINEL)
                 assertThat(context).hasSingleBean(PlatformCorrelationContext::class.java)
                 assertThat(context).hasSingleBean(PlatformProblemDetailFactory::class.java)
             }
@@ -169,6 +255,7 @@ class SecurityAutoConfigurationContextTest {
                     PlatformAutoConfiguration::class.java,
                     PlatformMvcSecurityAutoConfiguration::class.java,
                     PlatformWebFluxSecurityAutoConfiguration::class.java,
+                    *methodSecurityAutoConfigurations(),
                 ),
             )
             .withPropertyValues(VALID_ISSUER)
@@ -180,6 +267,7 @@ class SecurityAutoConfigurationContextTest {
                     PlatformAutoConfiguration::class.java,
                     PlatformMvcSecurityAutoConfiguration::class.java,
                     PlatformWebFluxSecurityAutoConfiguration::class.java,
+                    *methodSecurityAutoConfigurations(),
                 ),
             )
             .withPropertyValues(VALID_ISSUER)
@@ -189,6 +277,19 @@ class SecurityAutoConfigurationContextTest {
 
     private fun ReactiveWebApplicationContextRunner.withoutIssuer(): ReactiveWebApplicationContextRunner =
         withPropertyValues("logistics.parent-service.security.issuer=")
+
+    private fun methodSecurityAutoConfigurations(): Array<Class<*>> = arrayOf(
+        Class.forName(MVC_METHOD_SECURITY_AUTO_CONFIGURATION),
+        Class.forName(WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION),
+    )
+
+    private fun isFullMatch(
+        context: org.springframework.context.ConfigurableApplicationContext,
+        source: String,
+    ): Boolean = ConditionEvaluationReport.get(context.beanFactory)
+        .conditionAndOutcomesBySource[source]
+        ?.isFullMatch
+        ?: false
 
     @Configuration(proxyBeanMethods = false)
     class MvcApplicationSecurityConfiguration {
@@ -217,6 +318,18 @@ class SecurityAutoConfigurationContextTest {
             override fun getWebFilters(): Flux<WebFilter> = Flux.empty()
         }
     }
+
+    @Configuration(proxyBeanMethods = false)
+    @EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)
+    class MvcManualMethodSecurityConfiguration
+
+    @Configuration(proxyBeanMethods = false)
+    @EnableReactiveMethodSecurity
+    class WebFluxManualMethodSecurityConfiguration
+
+    @Configuration(proxyBeanMethods = false)
+    @EnableReactiveMethodSecurity(useAuthorizationManager = false)
+    class WebFluxLegacyManualMethodSecurityConfiguration
 
     @Configuration(proxyBeanMethods = false)
     class MvcDecoderAndConverterConfiguration {
@@ -280,5 +393,15 @@ class SecurityAutoConfigurationContextTest {
     private companion object {
         const val VALID_ISSUER =
             "logistics.parent-service.security.issuer=https://identity.example.test/realms/logistics"
+        const val MVC_METHOD_SECURITY_AUTO_CONFIGURATION =
+            "com.hz.logistics.parentservice.autoconfigure.security.mvc.PlatformMvcMethodSecurityAutoConfiguration"
+        const val WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION =
+            "com.hz.logistics.parentservice.autoconfigure.security.reactive.PlatformWebFluxMethodSecurityAutoConfiguration"
+        const val MVC_METHOD_SECURITY_PRE_POST_SENTINEL = "_prePostMethodSecurityConfiguration"
+        const val MVC_METHOD_SECURITY_SECURED_SENTINEL = "_securedMethodSecurityConfiguration"
+        const val MVC_METHOD_SECURITY_JSR250_SENTINEL = "_jsr250MethodSecurityConfiguration"
+        const val REACTIVE_METHOD_SECURITY_SENTINEL = "_reactiveMethodSecurityConfiguration"
+        const val LEGACY_REACTIVE_METHOD_SECURITY_CONFIGURATION = "reactiveMethodSecurityConfiguration"
+        const val LEGACY_METHOD_SECURITY_INTERCEPTOR = "methodSecurityInterceptor"
     }
 }

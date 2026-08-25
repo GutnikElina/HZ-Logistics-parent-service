@@ -10,6 +10,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionEvaluationRepor
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
 import org.springframework.boot.test.context.runner.ReactiveWebApplicationContextRunner
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner
+import org.springframework.boot.test.context.FilteredClassLoader
 import org.springframework.context.annotation.Configuration
 
 class AutoConfigurationSelectionTest {
@@ -29,7 +30,9 @@ class AutoConfigurationSelectionTest {
             "com.hz.logistics.parentservice.autoconfigure.tracing.PlatformTracingAutoConfiguration",
             "com.hz.logistics.parentservice.autoconfigure.metrics.PlatformMetricsAutoConfiguration",
             MVC_SECURITY_AUTO_CONFIGURATION,
+            MVC_METHOD_SECURITY_AUTO_CONFIGURATION,
             WEBFLUX_SECURITY_AUTO_CONFIGURATION,
+            WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION,
             MVC_ERROR_AUTO_CONFIGURATION,
             WEBFLUX_ERROR_AUTO_CONFIGURATION,
             LOGGING_AUTO_CONFIGURATION,
@@ -47,6 +50,8 @@ class AutoConfigurationSelectionTest {
                 assertThat(context).hasSingleBean(PlatformProblemDetailFactory::class.java)
                 assertThat(isFullMatch(context, MVC_SECURITY_AUTO_CONFIGURATION)).isFalse()
                 assertThat(isFullMatch(context, WEBFLUX_SECURITY_AUTO_CONFIGURATION)).isFalse()
+                assertThat(isFullMatch(context, MVC_METHOD_SECURITY_AUTO_CONFIGURATION)).isFalse()
+                assertThat(isFullMatch(context, WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION)).isFalse()
             }
     }
 
@@ -59,6 +64,8 @@ class AutoConfigurationSelectionTest {
                 assertThat(context).hasNotFailed()
                 assertThat(isFullMatch(context, MVC_SECURITY_AUTO_CONFIGURATION)).isTrue()
                 assertThat(isFullMatch(context, WEBFLUX_SECURITY_AUTO_CONFIGURATION)).isFalse()
+                assertThat(isFullMatch(context, MVC_METHOD_SECURITY_AUTO_CONFIGURATION)).isTrue()
+                assertThat(isFullMatch(context, WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION)).isFalse()
             }
     }
 
@@ -71,6 +78,8 @@ class AutoConfigurationSelectionTest {
                 assertThat(context).hasNotFailed()
                 assertThat(isFullMatch(context, MVC_SECURITY_AUTO_CONFIGURATION)).isFalse()
                 assertThat(isFullMatch(context, WEBFLUX_SECURITY_AUTO_CONFIGURATION)).isTrue()
+                assertThat(isFullMatch(context, MVC_METHOD_SECURITY_AUTO_CONFIGURATION)).isFalse()
+                assertThat(isFullMatch(context, WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION)).isTrue()
             }
     }
 
@@ -83,6 +92,8 @@ class AutoConfigurationSelectionTest {
                 assertThat(servletContext).hasNotFailed()
                 assertThat(isFullMatch(servletContext, MVC_SECURITY_AUTO_CONFIGURATION)).isTrue()
                 assertThat(isFullMatch(servletContext, WEBFLUX_SECURITY_AUTO_CONFIGURATION)).isFalse()
+                assertThat(isFullMatch(servletContext, MVC_METHOD_SECURITY_AUTO_CONFIGURATION)).isTrue()
+                assertThat(isFullMatch(servletContext, WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION)).isFalse()
             }
 
         ReactiveWebApplicationContextRunner()
@@ -92,6 +103,44 @@ class AutoConfigurationSelectionTest {
                 assertThat(reactiveContext).hasNotFailed()
                 assertThat(isFullMatch(reactiveContext, MVC_SECURITY_AUTO_CONFIGURATION)).isFalse()
                 assertThat(isFullMatch(reactiveContext, WEBFLUX_SECURITY_AUTO_CONFIGURATION)).isTrue()
+                assertThat(isFullMatch(reactiveContext, MVC_METHOD_SECURITY_AUTO_CONFIGURATION)).isFalse()
+                assertThat(isFullMatch(reactiveContext, WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION)).isTrue()
+            }
+    }
+
+    @Test
+    fun `backs off the selected MVC method branch when a required class is absent`() {
+        WebApplicationContextRunner()
+            .withUserConfiguration(AutoConfigurationTestApplication::class.java)
+            .withClassLoader(
+                FilteredClassLoader(
+                    "org.springframework.security.authorization.method.AuthorizationManagerBeforeMethodInterceptor",
+                ),
+            )
+            .withPropertyValues(*platformProperties(), "spring.main.web-application-type=servlet")
+            .run { context ->
+                assertThat(context).hasNotFailed()
+                assertThat(ConditionEvaluationReport.get(context.beanFactory).conditionAndOutcomesBySource)
+                    .containsKey(MVC_METHOD_SECURITY_AUTO_CONFIGURATION)
+                assertThat(isFullMatch(context, MVC_METHOD_SECURITY_AUTO_CONFIGURATION)).isFalse()
+            }
+    }
+
+    @Test
+    fun `backs off the selected WebFlux method branch when a required class is absent`() {
+        ReactiveWebApplicationContextRunner()
+            .withUserConfiguration(AutoConfigurationTestApplication::class.java)
+            .withClassLoader(
+                FilteredClassLoader(
+                    "org.springframework.security.authorization.method.AuthorizationManagerBeforeReactiveMethodInterceptor",
+                ),
+            )
+            .withPropertyValues(*platformProperties(), "spring.main.web-application-type=reactive")
+            .run { context ->
+                assertThat(context).hasNotFailed()
+                assertThat(ConditionEvaluationReport.get(context.beanFactory).conditionAndOutcomesBySource)
+                    .containsKey(WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION)
+                assertThat(isFullMatch(context, WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION)).isFalse()
             }
     }
 
@@ -116,8 +165,12 @@ class AutoConfigurationSelectionTest {
             "META-INF/spring/org.springframework.boot.autoconfigure.AutoConfiguration.imports"
         const val MVC_SECURITY_AUTO_CONFIGURATION =
             "com.hz.logistics.parentservice.autoconfigure.security.mvc.PlatformMvcSecurityAutoConfiguration"
+        const val MVC_METHOD_SECURITY_AUTO_CONFIGURATION =
+            "com.hz.logistics.parentservice.autoconfigure.security.mvc.PlatformMvcMethodSecurityAutoConfiguration"
         const val WEBFLUX_SECURITY_AUTO_CONFIGURATION =
             "com.hz.logistics.parentservice.autoconfigure.security.reactive.PlatformWebFluxSecurityAutoConfiguration"
+        const val WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION =
+            "com.hz.logistics.parentservice.autoconfigure.security.reactive.PlatformWebFluxMethodSecurityAutoConfiguration"
         const val MVC_ERROR_AUTO_CONFIGURATION =
             "com.hz.logistics.parentservice.autoconfigure.errors.mvc.PlatformMvcErrorAutoConfiguration"
         const val WEBFLUX_ERROR_AUTO_CONFIGURATION =
