@@ -2,7 +2,10 @@
 
 ## Default Policy
 
-When `logistics.parent-service.security.enabled=true` and the selected web stack has no application-owned security chain:
+When `logistics.parent-service.security.enabled=true` or the property is absent
+and therefore defaults to `true`, the selected web stack is eligible for the
+platform web and method-security layers. If it has no application-owned
+security chain, the platform default web policy is:
 
 1. OAuth2 Resource Server JWT authentication is enabled.
 2. Every request is authenticated unless it matches an explicit public pattern or the enabled health/info default.
@@ -10,7 +13,33 @@ When `logistics.parent-service.security.enabled=true` and the selected web stack
 4. CSRF behavior is configured appropriately for a stateless bearer-token API.
 5. Authentication (`401`) and authorization (`403`) failures use the common problem contract.
 
-The platform supplies authentication infrastructure, not service-specific role requirements or endpoint authorization policies.
+The platform supplies authentication infrastructure and the standard method-
+authorization mechanisms, not service-specific role requirements or endpoint
+authorization policies.
+
+## Automatic Method Authorization
+
+The consumer does not need to declare a method-security enablement annotation.
+The selected web application type determines the mechanism:
+
+| Selected application type | Platform mechanism | Supported method contract |
+|---|---|---|
+| Servlet/MVC | `@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)` | `@PreAuthorize`, `@PostAuthorize`, `@PreFilter`, `@PostFilter`, `@Secured`, `@RolesAllowed`, `@PermitAll`, `@DenyAll` |
+| Reactive/WebFlux | `@EnableReactiveMethodSecurity` | Publisher-returning `@PreAuthorize` and `@PostAuthorize`, including delayed, empty, scheduled, and Reactor-context-aware publishers |
+
+The MVC and WebFlux branches require their matching web application and
+Spring Security method classes. They use the existing security property
+condition (`true` or absent) and do not activate in a non-web application. If
+both API families are on the classpath, the selected application type remains
+decisive and the nonselected method infrastructure is absent.
+
+Method expressions consume the authenticated authorities already produced by
+the platform JWT flow. Nested roles use the configured
+`logistics.parent-service.security.role-prefix` (default `ROLE_`), while the
+standard `scope` and `scp` claims remain `SCOPE_<permission>` authorities. Thus
+`hasAuthority('ROLE_dispatcher')` and
+`hasAuthority('SCOPE_shipments.read')` use the same authority vocabulary as the
+web security layer; no new mapper or property is introduced.
 
 ## Issuer and Token Validation
 
@@ -77,6 +106,9 @@ An empty configured prefix is allowed. The platform does not strip an existing p
 | Non-matching path, no token | Denied | Same |
 | Valid nested roles and default/custom prefix | Equivalent authorities | Same |
 | Application chain present | Platform selected-stack chain absent | Same |
+| Valid token with required method authority | `200` | `200` |
+| Valid token without required method authority | `403` before an unauthorized method result is returned | `403` |
+| No bearer token for a protected method endpoint | `401` before method invocation | `401` before method invocation |
 
 Headers such as `WWW-Authenticate` required by bearer-token standards remain present. When a response body is emitted, its content type and body follow [problem-detail.md](./problem-detail.md).
 
@@ -84,9 +116,13 @@ Headers such as `WWW-Authenticate` required by bearer-token standards remain pre
 
 - Servlet/MVC configuration requires MVC/Servlet security classes and a Servlet web application, and creates a default only when no application `SecurityFilterChain` exists.
 - Reactive configuration requires WebFlux/reactive security classes and a Reactive web application, and creates a default only when no application `SecurityWebFilterChain` exists.
+- The MVC method branch requires its exact method-security interceptor classes and `jakarta.annotation.security.RolesAllowed`; the WebFlux method branch requires its exact reactive interceptor classes and Reactor `Mono`.
+- `security.enabled=false` removes both the selected platform web chain and the selected platform method-security mechanism. It does not remove application-owned web or method security, and unrelated platform capabilities remain eligible.
 - If both API classpaths exist, selected application type is decisive; both chains must never be created.
 - An application `JwtDecoder` or `ReactiveJwtDecoder` is reused by the corresponding platform chain.
 - A documented application authority converter is reused without disabling default denial.
+- An application-owned `SecurityFilterChain` or `SecurityWebFilterChain` backs off only the corresponding platform HTTP chain; it does not cause method-security back-off.
+- Matching application-owned method-security infrastructure causes the selected platform method branch to back off without duplicate advisors/interceptors. The MVC sentinels are `_prePostMethodSecurityConfiguration`, `_securedMethodSecurityConfiguration`, and `_jsr250MethodSecurityConfiguration`. The reactive sentinels are `_reactiveMethodSecurityConfiguration`, `reactiveMethodSecurityConfiguration`, and `methodSecurityInterceptor`.
 - Security back-off does not disable tracing, metrics, errors, or logging.
 
 ## Verification Contract
@@ -102,6 +138,13 @@ Both stack suites must use mock JWTs and controlled decoders to prove:
 - identical client status/problem shape;
 - application-owned chain back-off and decoder/converter reuse;
 - only the selected branch exists when both web API classpaths are present.
+- automatic MVC annotation coverage and reactive publisher authorization without
+  consumer enablement annotations;
+- matching manual-enablement sentinel back-off and web-chain independence;
+- method-level `200`/`403`/`401` outcomes with `ROLE_` and `SCOPE_` authorities,
+  including both `scope` and `scp` claims;
+- `security.enabled=false` removes platform method enforcement while leaving
+  application-owned security behavior available.
 
 ## Compatibility
 
@@ -112,7 +155,9 @@ Default access policy, issuer behavior, public pattern grammar, role mapping, pr
 Regression evidence is provided by `PublicEndpointPatternTest`,
 `RoleClaimsAuthorityMapperTest`, `IssuerValidationTest`,
 `PlatformJwtAuthenticationConverterTest`, `SecurityAutoConfigurationContextTest`,
-`MvcSecurityIntegrationTest`, and `WebFluxSecurityIntegrationTest`. A service
-that replaces the default chain must retain its required authorization policy;
-the initial migration only adds the BOM/starter and canonical issuer/role
-settings.
+`MethodSecurityAutoConfigurationAnnotationTest`, `MvcSecurityIntegrationTest`,
+and `WebFluxSecurityIntegrationTest`. A service that replaces the default chain
+must retain its required authentication and authorization policy; automatic
+method security remains independent unless matching method-security
+infrastructure is application-owned. The feature adds no module or property and
+requires no consumer migration.

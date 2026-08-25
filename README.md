@@ -203,6 +203,44 @@ Header names and values are validated, but header values are always treated as
 secrets and are never written to diagnostics, logs, ProblemDetails, or
 telemetry attributes.
 
+### Automatic method security
+
+With `logistics.parent-service.security.enabled=true`, or with the property
+absent (its default is `true`), the selected web stack receives platform method
+authorization without a consumer-side enablement annotation:
+
+| Selected stack | Automatic mechanism | Supported method annotations |
+|---|---|---|
+| Servlet/MVC | `@EnableMethodSecurity(securedEnabled = true, jsr250Enabled = true)` | `@PreAuthorize`, `@PostAuthorize`, `@PreFilter`, `@PostFilter`, `@Secured`, `@RolesAllowed`, `@PermitAll`, `@DenyAll` |
+| Reactive/WebFlux | `@EnableReactiveMethodSecurity` | Publisher-returning `@PreAuthorize` and `@PostAuthorize`, including Reactor-context-aware checks |
+
+Only the selected web application type contributes method-security
+infrastructure. A non-web application receives none from the platform, even if
+both MVC and WebFlux APIs are present on the classpath.
+
+Method expressions reuse the authorities from the existing JWT resource-server
+flow. Configured nested roles keep the configured prefix (default `ROLE_`), and
+standard `scope` and `scp` claims remain available as `SCOPE_<permission>`.
+For example, `hasAuthority('ROLE_dispatcher')` and
+`hasAuthority('SCOPE_shipments.read')` work at method level without a new
+converter or claim-mapping property.
+
+An application-owned `SecurityFilterChain` or `SecurityWebFilterChain` backs
+off only the corresponding platform HTTP chain. It does not disable selected
+stack method authorization; the application-owned chain must still authenticate
+bearer tokens when the method layer is expected to evaluate them. If matching
+method-security infrastructure is already present, the platform method branch
+backs off to avoid duplicate advisors/interceptors. A web-chain bean alone is
+not a method-security back-off signal. Setting
+`logistics.parent-service.security.enabled=false` disables both platform web and
+method security, while leaving application-owned security configuration and
+unrelated platform capabilities available.
+
+For a protected method endpoint, the layered result is `200` for a valid token
+with the required authority, `403` for a valid token without it, and `401` for
+no bearer token before the method is invoked. The MVC and WebFlux contracts are
+equivalent at this boundary.
+
 ## Configuration reference
 
 Every property below is part of the public compatibility contract. Defaults are
@@ -213,7 +251,7 @@ only when the corresponding default branch is active.
 
 | Property | Default | Required? | Purpose and usage |
 |---|---:|---|---|
-| logistics.parent-service.security.enabled | true | No | Enables the platform security contribution. Set false when the service owns security itself or does not need platform security. |
+| logistics.parent-service.security.enabled | true | No | Enables the platform web and method-security contributions. Set false when the service owns security itself or does not need platform security. |
 | logistics.parent-service.security.issuer | none | Conditional | Absolute HTTP(S) issuer used for JWT discovery and issuer validation. Required when the default MVC/WebFlux security chain is active. Not required for non-web services, a disabled capability, or an application-owned complete security chain. |
 | logistics.parent-service.security.public-endpoints | [] | No | Permit-only application paths. Every other request requires authentication when the default chain is active. |
 | logistics.parent-service.security.public-actuator-endpoints | true | No | Makes present and exposed health and info Actuator endpoints public. It does not expose endpoints; use management.endpoints.web.exposure.include for that. |
@@ -363,7 +401,7 @@ other capabilities.
 
 | Capability | Application override | What backs off |
 |---|---|---|
-| Security | Complete SecurityFilterChain or SecurityWebFilterChain | Only the selected platform security chain. The application owns authorization policy. |
+| Security | Complete SecurityFilterChain or SecurityWebFilterChain | Only the selected platform security chain. Automatic method security remains active unless matching method-security infrastructure is application-owned. |
 | JWT | Compatible JwtDecoder, ReactiveJwtDecoder, or authentication converter | Only the corresponding platform default. The default chain still requires a valid issuer configuration. |
 | Tracing | OpenTelemetry, SdkTracerProvider, ContextPropagators, supported exporter/customizer, or processor | Only the platform tracing contribution that conflicts with the application owner. |
 | Metrics | PlatformMetricsCustomizer and an application-owned MeterRegistry | Only the platform common-tag policy/customizer. |
@@ -377,6 +415,7 @@ precedence over the platform logback-spring.xml; this is logging-only back-off.
 ## Security, tracing, errors, and logging guarantees
 
 - Security is stateless and deny-by-default when enabled. The default chain validates issuer-backed JWTs and has equivalent MVC/WebFlux public-pattern and nested-role behavior.
+- Automatic method authorization is enabled for the selected MVC or WebFlux stack when security is enabled or its property is absent; it reuses the existing `ROLE_` and `SCOPE_` authorities and preserves the `200`/`401`/`403` layered outcomes.
 - W3C trace context is the cross-service propagation format. Missing or malformed inbound context is safe and non-fatal. Managed outbound clients propagate the current context.
 - Traces are sampled with a parent-based ratio sampler. Sampling controls recording/export, not whether correlation IDs are available.
 - OTLP export is asynchronous. A missing, unavailable, or rejecting collector is diagnostic-only and must not turn a successful request into a failure.
@@ -435,6 +474,26 @@ their web stack explicitly. The logging suite verifies valid JSON, correlation,
 baseline redaction, configured sensitive fields, nested exceptions, and the
 OpenTelemetry Logback appender.
 
+For the automatic method-security scenarios, the focused commands are:
+
+~~~bash
+./gradlew :logistics-parent-service-autoconfigure:test \
+  --tests '*MethodSecurityAutoConfigurationAnnotationTest' \
+  --tests '*AutoConfigurationSelectionTest' \
+  --tests '*SecurityAutoConfigurationContextTest' \
+  --tests '*CapabilityBackOffTest'
+./gradlew :logistics-parent-service-autoconfigure:mvcIntegrationTest \
+  --tests '*MvcSecurityIntegrationTest' \
+  --tests '*MvcProblemDetailIntegrationTest'
+./gradlew :logistics-parent-service-autoconfigure:webfluxIntegrationTest \
+  --tests '*WebFluxSecurityIntegrationTest' \
+  --tests '*WebFluxProblemDetailIntegrationTest'
+~~~
+
+These scenarios cover selected-stack isolation, matching manual-enablement
+back-off, application-owned HTTP chains, disabled platform security, mapped
+role/scope authorities, and the `200`/`401`/`403` matrix.
+
 ## Contract documentation
 
 The detailed compatibility contracts and release evidence are maintained in
@@ -458,7 +517,7 @@ The current platform version is 0.1.0.
 
 - PATCH releases contain compatible fixes.
 - MINOR releases add backward-compatible capabilities.
-- MAJOR releases are required for changes to module responsibilities, dependency direction, configuration names/defaults, security behavior, W3C/OTLP propagation, ProblemDetail fields, logging/redaction behavior, or supported web-stack selection.
+- MAJOR releases are required for breaking changes to module responsibilities, dependency direction, configuration names/defaults, security behavior, W3C/OTLP propagation, ProblemDetail fields, logging/redaction behavior, or supported web-stack selection.
 
 Every compatibility-sensitive change must update the affected contract,
 compatibility review, regression evidence, and migration notes before release.

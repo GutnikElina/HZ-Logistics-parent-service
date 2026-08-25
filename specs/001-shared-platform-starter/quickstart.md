@@ -1,6 +1,9 @@
 # Quickstart Validation Guide: Shared Platform Starter
 
-This guide describes the runnable acceptance path once the planned implementation exists. It validates reusable infrastructure only; it does not add logistics endpoints, business logic, identity-provider provisioning, or production telemetry backends.
+This guide describes the runnable acceptance path for the implemented shared
+platform. It validates reusable infrastructure only; it does not add logistics
+endpoints, business logic, identity-provider provisioning, or production
+telemetry backends.
 
 ## Prerequisites
 
@@ -77,6 +80,12 @@ The `ApplicationContextRunner` suites must cover:
 - Reactive application: WebFlux branch only;
 - both API classpaths with explicit Servlet type: MVC branch only;
 - both API classpaths with explicit Reactive type: WebFlux branch only;
+- with security enabled or the property absent: the selected method-security
+  branch is active and the opposite branch is absent;
+- with `security.enabled=false`: both selected platform web and method-security
+  branches are absent while unrelated capabilities remain eligible;
+- matching manual method-security infrastructure backs off the selected
+  platform method branch, while an application web-chain bean alone does not;
 - one application-owned capability bean at a time: only its corresponding default backs off and the other four remain active;
 - missing issuer fails only when the default selected-stack security branch would activate;
 - every canonical property binds, and no alternate root namespace binds.
@@ -97,7 +106,17 @@ Expected assertions:
 - no token and invalid/expired/issuer-mismatch tokens receive `401` problems;
 - a configured public pattern and present health/info default are public, while adjacent/nonmatching paths remain protected;
 - nested string/list roles map with `ROLE_` and a custom/empty prefix; malformed claims add no roles;
-- an application `SecurityFilterChain` backs off the platform MVC chain only;
+- `@PreAuthorize`, `@PostAuthorize`, `@PreFilter`, `@PostFilter`, `@Secured`,
+  `@RolesAllowed`, `@PermitAll`, and `@DenyAll` work without
+  `@EnableMethodSecurity` in the fixture;
+- `scope` and `scp` claims produce `SCOPE_<permission>` authorities usable in
+  method expressions;
+- a valid token with the required method authority returns `200`, a valid token
+  without it returns `403`, and no token returns `401` before method invocation;
+- an application bearer-authenticating `SecurityFilterChain` backs off the
+  platform MVC chain only, while method authorization remains active;
+- a `security.enabled=false` fixture with an independently owned permit-all
+  chain does not receive platform method enforcement;
 - a valid inbound `traceparent` is continued and an outbound managed RestClient receives W3C context;
 - a custom counter, timer, and gauge are visible in the test registry;
 - authentication, authorization, validation, and unhandled failures satisfy the problem contract;
@@ -116,6 +135,14 @@ The fixture is a minimal Reactive test application that adds the same BOM/starte
 Expected assertions mirror the MVC list, with these additional checks:
 
 - startup succeeds without MVC/Servlet infrastructure;
+- publisher-returning `@PreAuthorize` and `@PostAuthorize` work without
+  `@EnableReactiveMethodSecurity`, including delayed, empty, and scheduled
+  Reactor cases;
+- `scope` and `scp` claims reuse `SCOPE_<permission>` authorities in method
+  expressions, and the `200`/`403`/`401` matrix matches MVC;
+- an application bearer-authenticating `SecurityWebFilterChain` replaces only
+  the platform WebFlux chain; a disabled platform leaves independently owned
+  permit-all security in control;
 - a Reactor scheduling boundary preserves the correct trace/log/error correlation;
 - outbound managed WebClient propagation is W3C-compliant;
 - reactive authentication/error writing remains nonblocking;

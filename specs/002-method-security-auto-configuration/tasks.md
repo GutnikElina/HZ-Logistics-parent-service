@@ -100,10 +100,10 @@ description: "Actionable task list for automatic MVC and WebFlux method-security
 
 **Purpose**: Publish the automatic-enablement, authority, back-off, disablement, and compatibility contract after the implementation is in place.
 
-- [ ] T019 [P] Document automatic MVC/WebFlux method security, supported annotation families, `security.enabled=false`, and custom HTTP-chain independence in `README.md`.
-- [ ] T020 [P] Update the stable method-security contract with stack conditions, existing role/scope authority reuse, manual-enablement back-off, custom-chain independence, disabled behavior, and the `200`/`401`/`403` matrix in `specs/001-shared-platform-starter/contracts/security.md`.
-- [ ] T021 [P] Add runnable automatic method-security validation scenarios for both stacks, role/scope claims, selected-stack isolation, custom chains, and disabled security in `specs/001-shared-platform-starter/quickstart.md`.
-- [ ] T022 [P] Create the feature compatibility baseline and classify the change as additive MINOR with no module/property migration, then update the stable release review in `specs/002-method-security-auto-configuration/compatibility-review.md` and `specs/001-shared-platform-starter/compatibility-review.md`.
+- [X] T019 [P] Document automatic MVC/WebFlux method security, supported annotation families, `security.enabled=false`, and custom HTTP-chain independence in `README.md`.
+- [X] T020 [P] Update the stable method-security contract with stack conditions, existing role/scope authority reuse, manual-enablement back-off, custom-chain independence, disabled behavior, and the `200`/`401`/`403` matrix in `specs/001-shared-platform-starter/contracts/security.md`.
+- [X] T021 [P] Add runnable automatic method-security validation scenarios for both stacks, role/scope claims, selected-stack isolation, custom chains, and disabled security in `specs/001-shared-platform-starter/quickstart.md`.
+- [X] T022 [P] Create the feature compatibility baseline and classify the change as additive MINOR with no module/property migration, then update the stable release review in `specs/002-method-security-auto-configuration/compatibility-review.md` and `specs/001-shared-platform-starter/compatibility-review.md`.
 
 ---
 
@@ -112,7 +112,7 @@ description: "Actionable task list for automatic MVC and WebFlux method-security
 **Purpose**: Prove the focused acceptance matrix after implementation. These validations may run in parallel with documentation; the complete repository regression gate waits for both.
 
 - [ ] T023 [P] Run the focused unit and auto-configuration/context Gradle tests for exact annotation metadata, stack selection, method-security markers, disabled security, matching manual-enablement back-off, web-chain independence, and missing-class conditions using `specs/002-method-security-auto-configuration/quickstart.md`.
-- [ ] T024 [P] Run the focused MVC Gradle integration tests for automatic annotation coverage including no-match filtering, role/scope decisions, matching manual enablement, ProblemDetail fields/traceId, layered `200`/`401`/`403` behavior, custom-chain ownership, and disabled security using `specs/002-method-security-auto-configuration/quickstart.md`.
+- [X] T024 [P] Run the focused MVC Gradle integration tests for automatic annotation coverage including no-match filtering, role/scope decisions, matching manual enablement, ProblemDetail fields/traceId, layered `200`/`401`/`403` behavior, custom-chain ownership, and disabled security using `specs/002-method-security-auto-configuration/quickstart.md`.
 - [ ] T025 [P] Run the focused WebFlux Gradle integration tests for reactive delayed/empty/scheduled context propagation, role/scope decisions, matching manual enablement, ProblemDetail fields/traceId, layered `200`/`401`/`403` behavior, custom-chain ownership, and disabled security using `specs/002-method-security-auto-configuration/quickstart.md`.
 - [ ] T026 Run the full `./gradlew check` regression gate after documentation and focused validations pass, using the root build definition in `build.gradle.kts`.
 
@@ -189,3 +189,11 @@ T001 (setup)
 - [ ] T034 Configure the MVC application-owned bearer `SecurityFilterChain` fixture with the existing JWT role/scope authority converter so a valid mapped role reaches the protected method with `200` while a missing role remains `403` per US3/AC2/T011 (partial)
 - [ ] T035 Configure the WebFlux application-owned bearer `SecurityWebFilterChain` fixture with the existing reactive JWT role/scope authority converter so a valid mapped role reaches the protected method with `200` while a missing role remains `403` per US3/AC3/T012 (partial)
 - [ ] T036 Preserve the required reactive method-denial ProblemDetail contract by returning `403` rather than `401` for the public-route `@PreAuthorize` denial, including the existing RFC 7807 fields and traceId assertion per T010/plan: reactive ProblemDetail coverage (partial)
+
+## Phase 13: Convergence
+
+- [ ] T037 Replace the incompatible `@EnableReactiveMethodSecurity(useAuthorizationManager = false)` legacy fixture with executable named-sentinel fixtures and make the reactive manual-enablement back-off context pass without the missing `MethodSecurityMetadataSource` startup failure per FR-015/SC-010 (partial)
+- [ ] T038 Configure the MVC application-owned bearer `SecurityFilterChain` fixture to reuse the existing JWT authority converter and role mapper so nested `ROLE_dispatcher` authorization returns `200`, missing-role authorization returns `403`, and unauthenticated requests return `401` per US3/AC2/SC-007 (partial)
+- [ ] T039 Configure the WebFlux application-owned bearer `SecurityWebFilterChain` fixture to reuse the existing reactive JWT authority converter and role mapper so nested `ROLE_dispatcher` authorization returns `200`, missing-role authorization returns `403`, and unauthenticated requests return `401` per US3/AC3/SC-007 (partial)
+- [ ] T040 Correct reactive public-route method-denial handling so `@PreAuthorize("isAuthenticated()")` produces the common safe `403` ProblemDetail while protected routes retain `401` before method invocation per plan: reactive ProblemDetail coverage/SC-003 (partial)
+- [ ] T041 Update the README and both method-security quickstarts so focused MVC/WebFlux commands execute all required integration classes, including application-owned-chain, disabled-security, custom-prefix, actuator, and ProblemDetail scenarios, then rerun the complete focused validation per FR-014/SC-009 (partial)
