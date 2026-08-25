@@ -69,8 +69,19 @@ The repository can publish its three modules to the local Maven repository:
 ~~~
 
 Then use the same coordinates without changing the consumer dependency
-declarations. Add mavenLocal() to the consumer only for local development; use
-the team's configured Maven repository for released versions.
+declarations. The consumer must explicitly search the local Maven repository:
+
+~~~kotlin
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+~~~
+
+If the consumer manages repositories in settings.gradle.kts, put the same
+repositories in dependencyResolutionManagement instead. Keep mavenLocal() for
+local development only; released consumers should use the team's Maven
+repository and do not need the local repository.
 
 ## Consumer configuration
 
@@ -107,6 +118,11 @@ logistics:
     tracing:
       enabled: true
       sampling-probability: 0.1
+      otlp:
+        endpoint: http://localhost:4318/v1/traces
+        protocol: HTTP_PROTOBUF
+        timeout: 10s
+        compression: GZIP
 
     metrics:
       enabled: true
@@ -135,19 +151,9 @@ management:
       exposure:
         include: health,info,metrics
 
-  # Keep this equal to logistics.parent-service.tracing.sampling-probability.
-  # Use 1.0 only for local diagnostics or deterministic tests.
-  tracing:
-    sampling:
-      probability: 0.1
-
-  # These properties configure the Spring Boot/OpenTelemetry signal exporters.
-  # They are required when the service must send traces and logs to a collector.
+  # The platform owns trace configuration above. These properties are only
+  # for the additional log and metrics exporters.
   opentelemetry:
-    tracing:
-      export:
-        otlp:
-          endpoint: http://localhost:4318/v1/traces
     logging:
       export:
         otlp:
@@ -162,17 +168,17 @@ management:
         url: http://localhost:4318/v1/metrics
 ~~~
 
-The management block is the part that is commonly missed. The platform can
-create and correlate local observations, but metrics.common-tags alone does not
-export metrics, and console/structured logging alone does not export logs to an
-OTLP collector. Configure the corresponding management.* exporters in the
-consuming application when external export is required.
+The management block is the part that is commonly missed. The platform owns
+trace propagation, sampling, correlation, and the canonical trace exporter.
+However, metrics.common-tags alone does not export metrics, and
+console/structured logging alone does not export logs to an OTLP collector.
+Configure the management exporters below for logs and metrics.
 
-The example uses Spring Boot's exporter configuration for all three signals:
+The example uses the platform configuration for traces and Spring Boot's
+exporter configuration for logs and metrics:
 
 | Signal | Export property | Collector path |
 |---|---|---|
-| Traces | management.opentelemetry.tracing.export.otlp.endpoint | /v1/traces |
 | Logs | management.opentelemetry.logging.export.otlp.endpoint | /v1/logs |
 | Metrics | management.otlp.metrics.export.url | /v1/metrics |
 
@@ -181,41 +187,21 @@ or provision one. For a remote collector, replace localhost with the collector
 host and keep credentials outside source control by using environment variable
 placeholders or the deployment platform's secret configuration.
 
-### Choosing the trace exporter configuration
+Trace sampling and OTLP trace export are configured only in the canonical
+logistics.parent-service.tracing.* namespace. Do not duplicate them under
+management.tracing.* or management.opentelemetry.tracing.*. In particular, do
+not add a second sampling probability or trace endpoint to the consumer
+application. The management trace properties are relevant only when an
+application deliberately owns the complete tracing setup and the platform
+tracing contribution has backed off.
 
-The platform also exposes a canonical trace exporter under
-logistics.parent-service.tracing.otlp.*. It is useful when the platform-owned
-OTLP trace exporter is the desired owner:
-
-~~~yaml
-logistics:
-  parent-service:
-    tracing:
-      enabled: true
-      sampling-probability: 0.1
-      otlp:
-        endpoint: http://localhost:4318/v1/traces
-        protocol: HTTP_PROTOBUF
-        timeout: 10s
-        compression: GZIP
-        headers:
-          Authorization: <secret-from-environment>
-~~~
-
-Treat the canonical logistics.parent-service.tracing.otlp.* block and
-management.opentelemetry.tracing.export.otlp.* as alternative owners of the
-same trace exporter. Use one trace exporter configuration for a service unless
-you intentionally own and verify multiple exporters. The canonical platform
-block configures traces only; it does not configure log or metrics exporters.
-The management logging and metrics blocks are still needed for those signals.
-
-tracing.otlp.endpoint is optional. Without it, local tracing, W3C propagation,
-correlation, and ProblemDetail/log trace IDs remain active; only the
-platform-owned OTLP trace exporter is not created. HTTP/protobuf endpoints must
-be absolute HTTP(S) URIs. The GRPC option accepts a valid gRPC target. Header
-names and values are validated, but header values are always treated as secrets
-and are never written to diagnostics, logs, ProblemDetails, or telemetry
-attributes.
+Without logistics.parent-service.tracing.otlp.endpoint, local tracing, W3C
+propagation, correlation, and ProblemDetail/log trace IDs remain active; only
+the platform-owned OTLP trace exporter is not created. HTTP/protobuf endpoints
+must be absolute HTTP(S) URIs. The GRPC option accepts a valid gRPC target.
+Header names and values are validated, but header values are always treated as
+secrets and are never written to diagnostics, logs, ProblemDetails, or
+telemetry attributes.
 
 ## Configuration reference
 
@@ -336,14 +322,7 @@ block in the consumer application:
 
 ~~~yaml
 management:
-  tracing:
-    sampling:
-      probability: 1.0
   opentelemetry:
-    tracing:
-      export:
-        otlp:
-          endpoint: http://localhost:4318/v1/traces
     logging:
       export:
         otlp:
@@ -355,9 +334,9 @@ management:
         url: http://localhost:4318/v1/metrics
 ~~~
 
-Use sampling 1.0 for local verification only. In production, keep the sampling
-value aligned with the canonical platform property and choose a rate appropriate
-for traffic volume and cost.
+For deterministic local tracing tests, set
+logistics.parent-service.tracing.sampling-probability to 1.0. In production,
+choose a rate appropriate for traffic volume and cost.
 
 This block configures destinations; it does not replace the platform capability
 flags. In particular:
@@ -485,4 +464,3 @@ Every compatibility-sensitive change must update the affected contract,
 compatibility review, regression evidence, and migration notes before release.
 The supported adoption migration is additive: import the BOM, add the starter,
 select a web stack when applicable, and configure the canonical namespace.
-
