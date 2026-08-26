@@ -173,15 +173,15 @@ T001 (setup)
 
 ## Phase 10: Convergence
 
-- [ ] T027 Add filtered-classloader condition cases for every MVC and WebFlux class listed in the plan's `@ConditionalOnClass` contract, asserting that the corresponding method-security auto-configuration safely backs off when each individual required class is absent per plan: classpath conditions (partial)
-- [ ] T028 Add isolated matching manual-enablement context cases for each MVC sentinel and for the reactive authorization-manager and legacy sentinel variants, asserting that the selected platform method-security auto-configuration backs off without duplicate infrastructure while a web-chain bean alone remains a full match per FR-015 (partial)
+- [X] T027 Add filtered-classloader condition cases for every MVC and WebFlux class listed in the plan's `@ConditionalOnClass` contract, asserting that the corresponding method-security auto-configuration safely backs off when each individual required class is absent per plan: classpath conditions (partial)
+- [X] T028 Add isolated matching manual-enablement context cases for each MVC sentinel and for the reactive authorization-manager and legacy sentinel variants, asserting that the selected platform method-security auto-configuration backs off without duplicate infrastructure while a web-chain bean alone remains a full match per FR-015 (partial)
 
 ## Phase 11: Convergence
 
-- [ ] T029 Implement the MVC automatic method-security auto-configuration with the selected Servlet/property conditions, required classpath guards, matching manual-enablement sentinels, and enabled annotation families so the phase 3 MVC authorization, phase 5 layered-chain, and phase 6 mapped-authority scenarios execute per US1/AC1–4 and FR-002 (missing)
-- [ ] T030 Implement the WebFlux automatic method-security auto-configuration with the selected Reactive/property conditions, required classpath guards, matching manual-enablement sentinels, and publisher-aware authorization so the phase 4 reactive, phase 5 layered-chain, and phase 6 mapped-authority scenarios execute per US2/AC1–3 and FR-003 (missing)
-- [ ] T031 Register the MVC and WebFlux method-security auto-configurations immediately after their matching web-security entries in the imports registry so selected-stack activation and isolation are discoverable per the plan ordering decision and FR-001/FR-004 (missing)
-- [ ] T032 Add a WebFlux integration assertion that a token missing the required authority is rejected on a publisher-returning `@PostAuthorize` method, complementing the existing successful path per US2/AC1 (partial)
+- [X] T029 Implement the MVC automatic method-security auto-configuration with the selected Servlet/property conditions, required classpath guards, matching manual-enablement sentinels, and enabled annotation families so the phase 3 MVC authorization, phase 5 layered-chain, and phase 6 mapped-authority scenarios execute per US1/AC1–4 and FR-002 (missing)
+- [X] T030 Implement the WebFlux automatic method-security auto-configuration with the selected Reactive/property conditions, required classpath guards, matching manual-enablement sentinels, and publisher-aware authorization so the phase 4 reactive, phase 5 layered-chain, and phase 6 mapped-authority scenarios execute per US2/AC1–3 and FR-003 (missing)
+- [X] T031 Register the MVC and WebFlux method-security auto-configurations immediately after their matching web-security entries in the imports registry so selected-stack activation and isolation are discoverable per the plan ordering decision and FR-001/FR-004 (missing)
+- [X] T032 Add a WebFlux integration assertion that a token missing the required authority is rejected on a publisher-returning `@PostAuthorize` method, complementing the existing successful path per US2/AC1 (partial)
 
 ## Phase 12: Convergence
 

@@ -108,6 +108,11 @@ class WebFluxSecurityIntegrationTest(
             .expectStatus().isOk
             .expectBody(String::class.java).isEqualTo("ROLE_dispatcher")
 
+        webTestClient.get().uri("/methods/reactive/post-scheduled")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer missing-role")
+            .exchange()
+            .expectStatus().isForbidden
+
         webTestClient.get().uri("/methods/reactive/pre-delayed")
             .header(HttpHeaders.AUTHORIZATION, "Bearer missing-role")
             .exchange()

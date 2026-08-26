@@ -144,6 +144,22 @@ class SecurityAutoConfigurationContextTest {
     }
 
     @Test
+    fun `backs off MVC method security for every individual manual ownership sentinel`() {
+        assertMvcMethodSecurityBacksOffFor(
+            MVC_METHOD_SECURITY_PRE_POST_SENTINEL,
+            MvcPrePostMethodSecuritySentinelConfiguration::class.java,
+        )
+        assertMvcMethodSecurityBacksOffFor(
+            MVC_METHOD_SECURITY_SECURED_SENTINEL,
+            MvcSecuredMethodSecuritySentinelConfiguration::class.java,
+        )
+        assertMvcMethodSecurityBacksOffFor(
+            MVC_METHOD_SECURITY_JSR250_SENTINEL,
+            MvcJsr250MethodSecuritySentinelConfiguration::class.java,
+        )
+    }
+
+    @Test
     fun `backs off reactive authorization-manager method security for matching manual enablement`() {
         webFluxRunner()
             .withUserConfiguration(
@@ -172,6 +188,22 @@ class SecurityAutoConfigurationContextTest {
                 assertThat(context).hasBean(LEGACY_METHOD_SECURITY_INTERCEPTOR)
                 assertThat(isFullMatch(context, WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION)).isFalse()
             }
+    }
+
+    @Test
+    fun `backs off WebFlux method security for every individual manual ownership sentinel`() {
+        assertWebFluxMethodSecurityBacksOffFor(
+            REACTIVE_METHOD_SECURITY_SENTINEL,
+            WebFluxAuthorizationManagerMethodSecuritySentinelConfiguration::class.java,
+        )
+        assertWebFluxMethodSecurityBacksOffFor(
+            LEGACY_REACTIVE_METHOD_SECURITY_CONFIGURATION,
+            WebFluxLegacyMethodSecurityConfigurationSentinelConfiguration::class.java,
+        )
+        assertWebFluxMethodSecurityBacksOffFor(
+            LEGACY_METHOD_SECURITY_INTERCEPTOR,
+            WebFluxLegacyMethodSecurityInterceptorSentinelConfiguration::class.java,
+        )
     }
 
     @Test
@@ -283,6 +315,28 @@ class SecurityAutoConfigurationContextTest {
         Class.forName(WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION),
     )
 
+    private fun assertMvcMethodSecurityBacksOffFor(sentinel: String, manualConfiguration: Class<*>) {
+        mvcRunner()
+            .withUserConfiguration(MvcApplicationSecurityConfiguration::class.java, manualConfiguration)
+            .withoutIssuer()
+            .run { context ->
+                assertThat(context).hasNotFailed()
+                assertThat(context).hasBean(sentinel)
+                assertThat(isFullMatch(context, MVC_METHOD_SECURITY_AUTO_CONFIGURATION)).isFalse()
+            }
+    }
+
+    private fun assertWebFluxMethodSecurityBacksOffFor(sentinel: String, manualConfiguration: Class<*>) {
+        webFluxRunner()
+            .withUserConfiguration(WebFluxApplicationSecurityConfiguration::class.java, manualConfiguration)
+            .withoutIssuer()
+            .run { context ->
+                assertThat(context).hasNotFailed()
+                assertThat(context).hasBean(sentinel)
+                assertThat(isFullMatch(context, WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION)).isFalse()
+            }
+    }
+
     private fun isFullMatch(
         context: org.springframework.context.ConfigurableApplicationContext,
         source: String,
@@ -324,12 +378,54 @@ class SecurityAutoConfigurationContextTest {
     class MvcManualMethodSecurityConfiguration
 
     @Configuration(proxyBeanMethods = false)
+    class MvcPrePostMethodSecuritySentinelConfiguration {
+
+        @Bean(name = [MVC_METHOD_SECURITY_PRE_POST_SENTINEL])
+        fun prePostMethodSecurityConfiguration(): Any = Any()
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    class MvcSecuredMethodSecuritySentinelConfiguration {
+
+        @Bean(name = [MVC_METHOD_SECURITY_SECURED_SENTINEL])
+        fun securedMethodSecurityConfiguration(): Any = Any()
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    class MvcJsr250MethodSecuritySentinelConfiguration {
+
+        @Bean(name = [MVC_METHOD_SECURITY_JSR250_SENTINEL])
+        fun jsr250MethodSecurityConfiguration(): Any = Any()
+    }
+
+    @Configuration(proxyBeanMethods = false)
     @EnableReactiveMethodSecurity
     class WebFluxManualMethodSecurityConfiguration
 
     @Configuration(proxyBeanMethods = false)
+    class WebFluxAuthorizationManagerMethodSecuritySentinelConfiguration {
+
+        @Bean(name = [REACTIVE_METHOD_SECURITY_SENTINEL])
+        fun reactiveMethodSecurityConfiguration(): Any = Any()
+    }
+
+    @Configuration(proxyBeanMethods = false)
     @EnableReactiveMethodSecurity(useAuthorizationManager = false)
     class WebFluxLegacyManualMethodSecurityConfiguration
+
+    @Configuration(proxyBeanMethods = false)
+    class WebFluxLegacyMethodSecurityConfigurationSentinelConfiguration {
+
+        @Bean(name = [LEGACY_REACTIVE_METHOD_SECURITY_CONFIGURATION])
+        fun reactiveMethodSecurityConfiguration(): Any = Any()
+    }
+
+    @Configuration(proxyBeanMethods = false)
+    class WebFluxLegacyMethodSecurityInterceptorSentinelConfiguration {
+
+        @Bean(name = [LEGACY_METHOD_SECURITY_INTERCEPTOR])
+        fun methodSecurityInterceptor(): Any = Any()
+    }
 
     @Configuration(proxyBeanMethods = false)
     class MvcDecoderAndConverterConfiguration {

@@ -3,8 +3,11 @@ package com.hz.logistics.parentservice.autoconfigure
 import com.hz.logistics.parentservice.autoconfigure.errors.PlatformProblemDetailFactory
 import com.hz.logistics.parentservice.autoconfigure.observability.PlatformCorrelationContext
 import com.hz.logistics.parentservice.autoconfigure.properties.PlatformProperties
+import com.hz.logistics.parentservice.autoconfigure.security.mvc.PlatformMvcMethodSecurityAutoConfiguration
+import com.hz.logistics.parentservice.autoconfigure.security.reactive.PlatformWebFluxMethodSecurityAutoConfiguration
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.springframework.boot.autoconfigure.AutoConfigurations
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration
 import org.springframework.boot.autoconfigure.condition.ConditionEvaluationReport
 import org.springframework.boot.test.context.runner.ApplicationContextRunner
@@ -109,39 +112,35 @@ class AutoConfigurationSelectionTest {
     }
 
     @Test
-    fun `backs off the selected MVC method branch when a required class is absent`() {
-        WebApplicationContextRunner()
-            .withUserConfiguration(AutoConfigurationTestApplication::class.java)
-            .withClassLoader(
-                FilteredClassLoader(
-                    "org.springframework.security.authorization.method.AuthorizationManagerBeforeMethodInterceptor",
-                ),
-            )
-            .withPropertyValues(*platformProperties(), "spring.main.web-application-type=servlet")
-            .run { context ->
-                assertThat(context).hasNotFailed()
-                assertThat(ConditionEvaluationReport.get(context.beanFactory).conditionAndOutcomesBySource)
-                    .containsKey(MVC_METHOD_SECURITY_AUTO_CONFIGURATION)
-                assertThat(isFullMatch(context, MVC_METHOD_SECURITY_AUTO_CONFIGURATION)).isFalse()
-            }
+    fun `backs off the selected MVC method branch when any required class is absent`() {
+        MVC_METHOD_SECURITY_REQUIRED_CLASSES.forEach { requiredClass ->
+            mvcMethodSecurityRunner()
+                .withClassLoader(FilteredClassLoader(requiredClass))
+                .run { context ->
+                    assertThat(context).hasNotFailed()
+                    assertThat(ConditionEvaluationReport.get(context.beanFactory).conditionAndOutcomesBySource)
+                        .containsKey(MVC_METHOD_SECURITY_AUTO_CONFIGURATION)
+                    assertThat(isFullMatch(context, MVC_METHOD_SECURITY_AUTO_CONFIGURATION))
+                        .describedAs("MVC method security must back off without %s", requiredClass)
+                        .isFalse()
+                }
+        }
     }
 
     @Test
-    fun `backs off the selected WebFlux method branch when a required class is absent`() {
-        ReactiveWebApplicationContextRunner()
-            .withUserConfiguration(AutoConfigurationTestApplication::class.java)
-            .withClassLoader(
-                FilteredClassLoader(
-                    "org.springframework.security.authorization.method.AuthorizationManagerBeforeReactiveMethodInterceptor",
-                ),
-            )
-            .withPropertyValues(*platformProperties(), "spring.main.web-application-type=reactive")
-            .run { context ->
-                assertThat(context).hasNotFailed()
-                assertThat(ConditionEvaluationReport.get(context.beanFactory).conditionAndOutcomesBySource)
-                    .containsKey(WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION)
-                assertThat(isFullMatch(context, WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION)).isFalse()
-            }
+    fun `backs off the selected WebFlux method branch when any required class is absent`() {
+        WEBFLUX_METHOD_SECURITY_REQUIRED_CLASSES.forEach { requiredClass ->
+            webFluxMethodSecurityRunner()
+                .withClassLoader(FilteredClassLoader(requiredClass))
+                .run { context ->
+                    assertThat(context).hasNotFailed()
+                    assertThat(ConditionEvaluationReport.get(context.beanFactory).conditionAndOutcomesBySource)
+                        .containsKey(WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION)
+                    assertThat(isFullMatch(context, WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION))
+                        .describedAs("WebFlux method security must back off without %s", requiredClass)
+                        .isFalse()
+                }
+        }
     }
 
     private fun isFullMatch(context: org.springframework.context.ConfigurableApplicationContext, source: String): Boolean =
@@ -149,6 +148,16 @@ class AutoConfigurationSelectionTest {
             .conditionAndOutcomesBySource[source]
             ?.isFullMatch
             ?: false
+
+    private fun mvcMethodSecurityRunner(): WebApplicationContextRunner =
+        WebApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(PlatformMvcMethodSecurityAutoConfiguration::class.java))
+            .withPropertyValues("logistics.parent-service.security.enabled=true")
+
+    private fun webFluxMethodSecurityRunner(): ReactiveWebApplicationContextRunner =
+        ReactiveWebApplicationContextRunner()
+            .withConfiguration(AutoConfigurations.of(PlatformWebFluxMethodSecurityAutoConfiguration::class.java))
+            .withPropertyValues("logistics.parent-service.security.enabled=true")
 
     private fun platformProperties(): Array<String> = arrayOf(
         "logistics.parent-service.security.issuer=https://identity.example.test/realms/logistics",
@@ -171,6 +180,24 @@ class AutoConfigurationSelectionTest {
             "com.hz.logistics.parentservice.autoconfigure.security.reactive.PlatformWebFluxSecurityAutoConfiguration"
         const val WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION =
             "com.hz.logistics.parentservice.autoconfigure.security.reactive.PlatformWebFluxMethodSecurityAutoConfiguration"
+        val MVC_METHOD_SECURITY_REQUIRED_CLASSES = listOf(
+            "org.springframework.web.servlet.DispatcherServlet",
+            "org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity",
+            "org.springframework.security.authorization.method.AuthorizationManagerBeforeMethodInterceptor",
+            "org.springframework.security.authorization.method.AuthorizationManagerAfterMethodInterceptor",
+            "org.springframework.security.authorization.method.PreFilterAuthorizationMethodInterceptor",
+            "org.springframework.security.authorization.method.PostFilterAuthorizationMethodInterceptor",
+            "jakarta.annotation.security.RolesAllowed",
+        )
+        val WEBFLUX_METHOD_SECURITY_REQUIRED_CLASSES = listOf(
+            "org.springframework.web.reactive.DispatcherHandler",
+            "org.springframework.security.config.annotation.method.configuration.EnableReactiveMethodSecurity",
+            "org.springframework.security.authorization.method.AuthorizationManagerBeforeReactiveMethodInterceptor",
+            "org.springframework.security.authorization.method.AuthorizationManagerAfterReactiveMethodInterceptor",
+            "org.springframework.security.authorization.method.PreFilterAuthorizationReactiveMethodInterceptor",
+            "org.springframework.security.authorization.method.PostFilterAuthorizationReactiveMethodInterceptor",
+            "reactor.core.publisher.Mono",
+        )
         const val MVC_ERROR_AUTO_CONFIGURATION =
             "com.hz.logistics.parentservice.autoconfigure.errors.mvc.PlatformMvcErrorAutoConfiguration"
         const val WEBFLUX_ERROR_AUTO_CONFIGURATION =
