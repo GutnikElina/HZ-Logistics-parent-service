@@ -46,6 +46,35 @@ Expected:
 
 The custom integration source-set tasks are part of the planned build and must be wired into `check`.
 
+### Automatic Method-Security Focused Checks
+
+```bash
+./gradlew :logistics-parent-service-autoconfigure:test \
+  --tests '*MethodSecurityAutoConfigurationAnnotationTest' \
+  --tests '*AutoConfigurationSelectionTest' \
+  --tests '*SecurityAutoConfigurationContextTest' \
+  --tests '*CapabilityBackOffTest'
+./gradlew :logistics-parent-service-autoconfigure:mvcIntegrationTest \
+  --tests '*MvcSecurityIntegrationTest' \
+  --tests '*MvcSecurityCustomPrefixIntegrationTest' \
+  --tests '*MvcSecurityActuatorOptOutIntegrationTest' \
+  --tests '*MvcApplicationOwnedSecurityIntegrationTest' \
+  --tests '*MvcSecurityDisabledMethodIntegrationTest' \
+  --tests '*MvcProblemDetailIntegrationTest'
+./gradlew :logistics-parent-service-autoconfigure:webfluxIntegrationTest \
+  --tests '*WebFluxSecurityIntegrationTest' \
+  --tests '*WebFluxSecurityCustomPrefixIntegrationTest' \
+  --tests '*WebFluxSecurityActuatorOptOutIntegrationTest' \
+  --tests '*WebFluxApplicationOwnedSecurityIntegrationTest' \
+  --tests '*WebFluxSecurityDisabledMethodIntegrationTest' \
+  --tests '*WebFluxProblemDetailIntegrationTest'
+```
+
+These focused commands cover automatic method authorization, matching manual
+enablement back-off, application-owned bearer chains, disabled security,
+custom role prefixes, protected actuator endpoints, and the ProblemDetail
+contract on both supported web stacks.
+
 ## Scenario 1: BOM Alignment and Thin Starter
 
 Run:

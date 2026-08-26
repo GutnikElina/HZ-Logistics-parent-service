@@ -1,6 +1,7 @@
 package com.hz.logistics.parentservice.autoconfigure.security
 
 import com.hz.logistics.parentservice.autoconfigure.support.mockJwt
+import com.hz.logistics.parentservice.autoconfigure.properties.PlatformProperties
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.boot.SpringBootConfiguration
@@ -19,6 +20,7 @@ import org.springframework.security.config.web.server.ServerHttpSecurity
 import org.springframework.security.core.Authentication
 import org.springframework.security.oauth2.jwt.BadJwtException
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder
+import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter
 import org.springframework.security.web.server.SecurityWebFilterChain
 import org.springframework.test.web.reactive.server.WebTestClient
 import org.springframework.web.bind.annotation.GetMapping
@@ -247,6 +249,7 @@ class WebFluxSecurityActuatorOptOutIntegrationTest(
 @SpringBootTest(
     classes = [WebFluxApplicationOwnedSecurityFixtureApplication::class],
     webEnvironment = WebEnvironment.RANDOM_PORT,
+    properties = ["logistics.parent-service.security.role-claims-path=realm_access.roles"],
 )
 class WebFluxApplicationOwnedSecurityIntegrationTest(
 ) {
@@ -363,14 +366,21 @@ class WebFluxApplicationOwnedSecurityFixtureApplication {
     fun applicationSecurityWebFilterChain(
         http: ServerHttpSecurity,
         reactiveJwtDecoder: ReactiveJwtDecoder,
-    ): SecurityWebFilterChain =
-        http
+        properties: PlatformProperties,
+    ): SecurityWebFilterChain {
+        val authenticationConverter = PlatformJwtAuthenticationConverter(RoleClaimsAuthorityMapper(properties.security))
+
+        return http
             .csrf { it.disable() }
             .authorizeExchange { it.anyExchange().authenticated() }
             .oauth2ResourceServer { resourceServer ->
-                resourceServer.jwt { jwt -> jwt.jwtDecoder(reactiveJwtDecoder) }
+                resourceServer.jwt { jwt ->
+                    jwt.jwtDecoder(reactiveJwtDecoder)
+                        .jwtAuthenticationConverter(ReactiveJwtAuthenticationConverterAdapter(authenticationConverter))
+                }
             }
             .build()
+    }
 }
 
 @SpringBootConfiguration(proxyBeanMethods = false)

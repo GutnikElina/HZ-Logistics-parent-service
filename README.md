@@ -484,15 +484,24 @@ For the automatic method-security scenarios, the focused commands are:
   --tests '*CapabilityBackOffTest'
 ./gradlew :logistics-parent-service-autoconfigure:mvcIntegrationTest \
   --tests '*MvcSecurityIntegrationTest' \
+  --tests '*MvcSecurityCustomPrefixIntegrationTest' \
+  --tests '*MvcSecurityActuatorOptOutIntegrationTest' \
+  --tests '*MvcApplicationOwnedSecurityIntegrationTest' \
+  --tests '*MvcSecurityDisabledMethodIntegrationTest' \
   --tests '*MvcProblemDetailIntegrationTest'
 ./gradlew :logistics-parent-service-autoconfigure:webfluxIntegrationTest \
   --tests '*WebFluxSecurityIntegrationTest' \
+  --tests '*WebFluxSecurityCustomPrefixIntegrationTest' \
+  --tests '*WebFluxSecurityActuatorOptOutIntegrationTest' \
+  --tests '*WebFluxApplicationOwnedSecurityIntegrationTest' \
+  --tests '*WebFluxSecurityDisabledMethodIntegrationTest' \
   --tests '*WebFluxProblemDetailIntegrationTest'
 ~~~
 
 These scenarios cover selected-stack isolation, matching manual-enablement
-back-off, application-owned HTTP chains, disabled platform security, mapped
-role/scope authorities, and the `200`/`401`/`403` matrix.
+back-off, application-owned HTTP chains, disabled platform security,
+custom-prefix and actuator behavior, mapped role/scope authorities, and the
+`200`/`401`/`403` matrix.
 
 ## Contract documentation
 

@@ -175,23 +175,7 @@ class SecurityAutoConfigurationContextTest {
     }
 
     @Test
-    fun `backs off reactive legacy method security for any matching legacy sentinel`() {
-        webFluxRunner()
-            .withUserConfiguration(
-                WebFluxApplicationSecurityConfiguration::class.java,
-                WebFluxLegacyManualMethodSecurityConfiguration::class.java,
-            )
-            .withoutIssuer()
-            .run { context ->
-                assertThat(context).hasNotFailed()
-                assertThat(context).hasBean(LEGACY_REACTIVE_METHOD_SECURITY_CONFIGURATION)
-                assertThat(context).hasBean(LEGACY_METHOD_SECURITY_INTERCEPTOR)
-                assertThat(isFullMatch(context, WEBFLUX_METHOD_SECURITY_AUTO_CONFIGURATION)).isFalse()
-            }
-    }
-
-    @Test
-    fun `backs off WebFlux method security for every individual manual ownership sentinel`() {
+    fun `backs off WebFlux method security for every executable manual ownership sentinel`() {
         assertWebFluxMethodSecurityBacksOffFor(
             REACTIVE_METHOD_SECURITY_SENTINEL,
             WebFluxAuthorizationManagerMethodSecuritySentinelConfiguration::class.java,
@@ -408,10 +392,6 @@ class SecurityAutoConfigurationContextTest {
         @Bean(name = [REACTIVE_METHOD_SECURITY_SENTINEL])
         fun reactiveMethodSecurityConfiguration(): Any = Any()
     }
-
-    @Configuration(proxyBeanMethods = false)
-    @EnableReactiveMethodSecurity(useAuthorizationManager = false)
-    class WebFluxLegacyManualMethodSecurityConfiguration
 
     @Configuration(proxyBeanMethods = false)
     class WebFluxLegacyMethodSecurityConfigurationSentinelConfiguration {

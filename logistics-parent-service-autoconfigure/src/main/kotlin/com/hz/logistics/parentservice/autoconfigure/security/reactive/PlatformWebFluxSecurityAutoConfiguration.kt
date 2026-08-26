@@ -18,15 +18,21 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplicat
 import org.springframework.boot.security.autoconfigure.actuate.web.reactive.EndpointRequest
 import org.springframework.context.annotation.Bean
 import org.springframework.core.convert.converter.Converter
+import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.authentication.AbstractAuthenticationToken
 import org.springframework.security.config.annotation.web.reactive.EnableWebFluxSecurity
 import org.springframework.security.config.web.server.ServerHttpSecurity
+import org.springframework.security.config.web.server.SecurityWebFiltersOrder
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter
 import org.springframework.security.web.server.SecurityWebFilterChain
+import org.springframework.security.web.server.authorization.ServerAccessDeniedHandler
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher
+import org.springframework.web.server.ServerWebExchange
+import org.springframework.web.server.WebFilter
+import org.springframework.web.server.WebFilterChain
 import reactor.core.publisher.Mono
 
 /**
@@ -79,6 +85,10 @@ class PlatformWebFluxSecurityAutoConfiguration {
         http
             .csrf { csrf -> csrf.disable() }
             .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
+            .addFilterAfter(
+                PlatformWebFluxPublicMethodSecurityDeniedFilter(publicEndpoints, failureHandlers.accessDeniedHandler),
+                SecurityWebFiltersOrder.EXCEPTION_TRANSLATION,
+            )
             .exceptionHandling { exceptions ->
                 exceptions
                     .authenticationEntryPoint(failureHandlers.authenticationEntryPoint)
@@ -115,6 +125,28 @@ class PlatformWebFluxSecurityAutoConfiguration {
                 ServerWebExchangeMatcher.MatchResult.match()
             } else {
                 ServerWebExchangeMatcher.MatchResult.notMatch()
+            }
+        }
+}
+
+/**
+ * Lets method-security denials on an explicitly public route reach the common
+ * forbidden handler before the reactive exception-translation filter turns an
+ * anonymous request into an authentication challenge. Protected routes still
+ * propagate their denial to the normal 401/403 request-security handling.
+ */
+private class PlatformWebFluxPublicMethodSecurityDeniedFilter(
+    private val publicEndpoints: PublicEndpointPattern,
+    private val accessDeniedHandler: ServerAccessDeniedHandler,
+) : WebFilter {
+
+    override fun filter(exchange: ServerWebExchange, chain: WebFilterChain): Mono<Void> =
+        chain.filter(exchange).onErrorResume(AccessDeniedException::class.java) { exception ->
+            val path = exchange.request.path.pathWithinApplication().value()
+            if (publicEndpoints.matches(path)) {
+                accessDeniedHandler.handle(exchange, exception)
+            } else {
+                Mono.error(exception)
             }
         }
 }

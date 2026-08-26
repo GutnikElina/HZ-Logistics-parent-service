@@ -33,6 +33,10 @@ Expected evidence:
 ```bash
 ./gradlew :logistics-parent-service-autoconfigure:mvcIntegrationTest \
   --tests '*MvcSecurityIntegrationTest' \
+  --tests '*MvcSecurityCustomPrefixIntegrationTest' \
+  --tests '*MvcSecurityActuatorOptOutIntegrationTest' \
+  --tests '*MvcApplicationOwnedSecurityIntegrationTest' \
+  --tests '*MvcSecurityDisabledMethodIntegrationTest' \
   --tests '*MvcProblemDetailIntegrationTest'
 ```
 
@@ -51,6 +55,10 @@ Expected evidence without any fixture `@EnableMethodSecurity` annotation:
 ```bash
 ./gradlew :logistics-parent-service-autoconfigure:webfluxIntegrationTest \
   --tests '*WebFluxSecurityIntegrationTest' \
+  --tests '*WebFluxSecurityCustomPrefixIntegrationTest' \
+  --tests '*WebFluxSecurityActuatorOptOutIntegrationTest' \
+  --tests '*WebFluxApplicationOwnedSecurityIntegrationTest' \
+  --tests '*WebFluxSecurityDisabledMethodIntegrationTest' \
   --tests '*WebFluxProblemDetailIntegrationTest'
 ```
 

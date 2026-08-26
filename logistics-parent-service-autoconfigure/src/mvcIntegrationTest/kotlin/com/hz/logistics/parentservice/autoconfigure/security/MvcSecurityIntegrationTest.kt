@@ -1,6 +1,7 @@
 package com.hz.logistics.parentservice.autoconfigure.security
 
 import com.hz.logistics.parentservice.autoconfigure.support.mockJwt
+import com.hz.logistics.parentservice.autoconfigure.properties.PlatformProperties
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.springframework.boot.SpringBootConfiguration
@@ -249,6 +250,7 @@ class MvcSecurityActuatorOptOutIntegrationTest(
 @SpringBootTest(
     classes = [MvcApplicationOwnedSecurityFixtureApplication::class],
     webEnvironment = WebEnvironment.MOCK,
+    properties = ["logistics.parent-service.security.role-claims-path=realm_access.roles"],
 )
 @AutoConfigureMockMvc
 class MvcApplicationOwnedSecurityIntegrationTest(
@@ -340,14 +342,23 @@ class MvcApplicationOwnedSecurityFixtureApplication {
     fun jwtDecoder(): JwtDecoder = MvcSecurityFixtureApplication().jwtDecoder()
 
     @Bean
-    fun applicationSecurityFilterChain(http: HttpSecurity, jwtDecoder: JwtDecoder): SecurityFilterChain =
-        http
+    fun applicationSecurityFilterChain(
+        http: HttpSecurity,
+        jwtDecoder: JwtDecoder,
+        properties: PlatformProperties,
+    ): SecurityFilterChain {
+        val authenticationConverter = PlatformJwtAuthenticationConverter(RoleClaimsAuthorityMapper(properties.security))
+
+        return http
             .csrf { it.disable() }
             .authorizeHttpRequests { it.anyRequest().authenticated() }
             .oauth2ResourceServer { resourceServer ->
-                resourceServer.jwt { jwt -> jwt.decoder(jwtDecoder) }
+                resourceServer.jwt { jwt ->
+                    jwt.decoder(jwtDecoder).jwtAuthenticationConverter(authenticationConverter)
+                }
             }
             .build()
+    }
 }
 
 @SpringBootConfiguration(proxyBeanMethods = false)
