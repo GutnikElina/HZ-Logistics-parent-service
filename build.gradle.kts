@@ -7,10 +7,10 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     base
-    kotlin("jvm") version "2.2.21" apply false
-    kotlin("plugin.spring") version "2.2.21" apply false
-    kotlin("kapt") version "2.2.21" apply false
-    id("org.springframework.boot") version "4.0.7" apply false
+    kotlin("jvm") version "2.3.21" apply false
+    kotlin("plugin.spring") version "2.3.21" apply false
+    kotlin("kapt") version "2.3.21" apply false
+    id("org.springframework.boot") version "4.1.0" apply false
 }
 
 allprojects {

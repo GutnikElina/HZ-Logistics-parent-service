@@ -31,13 +31,13 @@ The starter must not resolve either web starter transitively. A non-web applicat
 
 The BOM must:
 
-- import and pin `org.springframework.boot:spring-boot-dependencies:4.0.7`;
+- import and pin `org.springframework.boot:spring-boot-dependencies:4.1.0`;
 - align both consumable platform artifacts to the platform release version;
 - manage `org.springframework.boot:spring-boot-starter-opentelemetry` through the imported Spring Boot BOM as the single Micrometer/OpenTelemetry tracing and OTLP dependency;
-- explicitly constrain `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha`;
+- explicitly constrain `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.28.0-alpha`;
 - govern Kotlin, Spring Framework, Spring Security, the Boot observability starter, Logback, the approved external Logback appender, test libraries, and any additional implementation dependency;
 - allow all platform module dependency declarations and supported consumer examples to omit individual dependency versions;
-- fail dependency verification if Spring Boot resolves to a version other than `4.0.7`.
+- fail dependency verification if Spring Boot resolves to a version other than `4.1.0`.
 
 ## Auto-Configuration Selection
 

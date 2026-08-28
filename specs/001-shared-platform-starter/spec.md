@@ -6,7 +6,7 @@
 
 **Status**: Draft
 
-**Input**: User description: "Create a specification for a shared platform starter used by all ten HZ Logistics microservices. The platform must provide reusable cross-cutting capabilities through exactly three Gradle Kotlin DSL modules: BOM, auto-configuration, and a thin starter. It must support Kotlin, Java 21, Spring Boot 4.0.7, and both Servlet/MVC and Reactive/WebFlux applications without forcing either web stack. Cover secure-by-default OAuth2 resource-server security, configurable JWT role mapping, W3C tracing with OTLP, Micrometer metrics, RFC 7807 ProblemDetail errors, and structured redacted JSON logging."
+**Input**: User description: "Create a specification for a shared platform starter used by all ten HZ Logistics microservices. The platform must provide reusable cross-cutting capabilities through exactly three Gradle Kotlin DSL modules: BOM, auto-configuration, and a thin starter. It must support Kotlin, Java 21, Spring Boot 4.1.0, and both Servlet/MVC and Reactive/WebFlux applications without forcing either web stack. Cover secure-by-default OAuth2 resource-server security, configurable JWT role mapping, W3C tracing with OTLP, Micrometer metrics, RFC 7807 ProblemDetail errors, and structured redacted JSON logging."
 
 ## Clarifications
 
@@ -30,8 +30,8 @@ As an HZ Logistics service team, I want to add one supported platform starter to
 
 **Acceptance Scenarios**:
 
-1. **Given** a Kotlin service running on Java 21 with Spring Boot 4.0.7 and Servlet/MVC dependencies, **when** it adopts the single public starter, **then** the service starts with platform infrastructure and no Reactive/WebFlux web infrastructure is required or forced.
-2. **Given** a Kotlin service running on Java 21 with Spring Boot 4.0.7 and Reactive/WebFlux dependencies, **when** it adopts the same public starter, **then** the service starts with platform infrastructure and no Servlet/MVC web infrastructure is required or forced.
+1. **Given** a Kotlin service running on Java 21 with Spring Boot 4.1.0 and Servlet/MVC dependencies, **when** it adopts the single public starter, **then** the service starts with platform infrastructure and no Reactive/WebFlux web infrastructure is required or forced.
+2. **Given** a Kotlin service running on Java 21 with Spring Boot 4.1.0 and Reactive/WebFlux dependencies, **when** it adopts the same public starter, **then** the service starts with platform infrastructure and no Servlet/MVC web infrastructure is required or forced.
 3. **Given** any service consumes platform dependencies, **when** the platform version is changed, **then** the BOM supplies one aligned version set for platform dependencies and consumers do not need a second platform artifact for their chosen web stack.
 
 ---
@@ -107,7 +107,7 @@ As a developer or operator, I want metrics, structured logs, and errors to use c
 ### Functional Requirements
 
 - **FR-001**: The platform MUST be delivered through exactly three Gradle Kotlin DSL modules: `logistics-parent-service-bom` for aligned dependency versions, `logistics-parent-service-autoconfigure` for implementation and conditional auto-configuration, and `logistics-parent-service-starter` as a thin dependency entry point. No fourth platform module or separate MVC/WebFlux starter is in scope.
-- **FR-002**: The platform implementation MUST use Kotlin and MUST support Java 21 runtime compatibility and Spring Boot 4.0.7. Dependency versions, including observability and logging dependencies, MUST be controlled by the BOM, and the baseline MUST NOT be implicitly upgraded.
+- **FR-002**: The platform implementation MUST use Kotlin and MUST support Java 21 runtime compatibility and Spring Boot 4.1.0. Dependency versions, including observability and logging dependencies, MUST be controlled by the BOM, and the baseline MUST NOT be implicitly upgraded.
 - **FR-003**: The public starter MUST allow a consuming application to choose Servlet/MVC or Reactive/WebFlux independently. It MUST NOT force either web stack by bringing in or requiring the other stack's web starter.
 - **FR-004**: Auto-configuration MUST provide separate conditional MVC and WebFlux behavior based on the selected application web model and available classes, MUST avoid creating both branches for one application, and MUST back off when a compatible application bean owns the same responsibility. An application `SecurityFilterChain` or `SecurityWebFilterChain` MUST disable only the corresponding platform security chain; application decoders and documented authority converters MUST be reusable without disabling secure default denial.
 - **FR-005**: When the default platform security is active, all application endpoints MUST require authentication unless they are explicitly included in `logistics.parent-service.security.public-endpoints`; health and info actuator endpoints MUST be public by default when those endpoints are present, with the default configurable. Public endpoint configuration MUST use the documented common path-pattern grammar from the security contract, applied identically in MVC and WebFlux. Each configured pattern MUST make only matching paths public; all non-matching paths MUST remain protected. Invalid patterns MUST fail startup while the platform security chain is active.

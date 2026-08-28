@@ -2,7 +2,7 @@
 
 ## Tracing API and Implementation
 
-The platform uses Spring Boot 4.0.7's `spring-boot-starter-opentelemetry` for Micrometer Observation/Tracing integration, OpenTelemetry trace implementation, and OTLP export. Application code may use Micrometer observation/tracing APIs; it is not required to use the OpenTelemetry tracing API directly. The approved OTel Logback appender is managed separately because it is not included in Spring Boot.
+The platform uses Spring Boot 4.1.0's `spring-boot-starter-opentelemetry` for Micrometer Observation/Tracing integration, OpenTelemetry trace implementation, and OTLP export. Application code may use Micrometer observation/tracing APIs; it is not required to use the OpenTelemetry tracing API directly. The approved OTel Logback appender is managed separately because it is not included in Spring Boot.
 
 The platform's `logistics.parent-service.tracing.*` properties are the public contract. Auto-configuration maps them to Spring Boot's OpenTelemetry tracing/export configuration or supported exporter builder customizers, so consumer applications do not need to use the underlying `management.opentelemetry.*` namespace directly.
 

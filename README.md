@@ -15,9 +15,9 @@ configures the platform capabilities it needs.
 | Component | Version |
 |---|---:|
 | Java | 21 |
-| Kotlin | 2.2.21 |
+| Kotlin | 2.3.21 |
 | Gradle Wrapper | 9.3.0 |
-| Spring Boot | 4.0.7 |
+| Spring Boot | 4.1.0 |
 | Platform release | 0.1.0 |
 
 The root project is an aggregator only. It is not published as a fourth

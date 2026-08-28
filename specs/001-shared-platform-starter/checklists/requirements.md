@@ -31,5 +31,5 @@
 
 ## Notes
 
-- The specification intentionally retains constitution-mandated platform constraints (the three module responsibilities, Gradle Kotlin DSL, Kotlin, Java 21, Spring Boot 4.0.7, Spring Security, Micrometer, OpenTelemetry, and Logback) because they define this shared infrastructure feature's required compatibility and architecture. It does not prescribe class layouts, implementation steps, or service business logic.
+- The specification intentionally retains constitution-mandated platform constraints (the three module responsibilities, Gradle Kotlin DSL, Kotlin, Java 21, Spring Boot 4.1.0, Spring Security, Micrometer, OpenTelemetry, and Logback) because they define this shared infrastructure feature's required compatibility and architecture. It does not prescribe class layouts, implementation steps, or service business logic.
 - MVC and WebFlux acceptance criteria are paired in the matrix under Requirements, and the required reusable-infrastructure quality gates are explicit.

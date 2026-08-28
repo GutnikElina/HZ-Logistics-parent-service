@@ -12,9 +12,9 @@ The new configurations are ordered immediately after their matching platform web
 
 ## Technical Context
 
-**Language/Version**: Kotlin 2.2.21; Java 21 bytecode/toolchain
+**Language/Version**: Kotlin 2.3.21; Java 21 bytecode/toolchain
 
-**Primary Dependencies**: Spring Boot 4.0.7 auto-configuration and test support; Spring Security configuration/resource server (Boot-managed); Spring MVC or WebFlux selected by the consumer; Reactor for the reactive branch
+**Primary Dependencies**: Spring Boot 4.1.0 auto-configuration and test support; Spring Security configuration/resource server (Boot-managed); Spring MVC or WebFlux selected by the consumer; Reactor for the reactive branch
 
 **Storage**: N/A — this feature creates no persistent data or domain model
 

@@ -83,8 +83,8 @@ When Micrometer/OpenTelemetry trace context exists, the sanitized event contains
 ## OpenTelemetry Logback Integration
 
 - `spring-boot-starter-opentelemetry` supplies the platform's Boot-managed tracing/OTLP runtime, but it does not include an OpenTelemetry Logback appender.
-- Coordinate: `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha`.
-- The BOM pins this exact version and aligns its OpenTelemetry API dependency to Boot-managed 1.55.0.
+- Coordinate: `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.28.0-alpha`.
+- The BOM pins this exact version and aligns its OpenTelemetry API dependency to Boot-managed 1.62.0.
 - The appender is initialized programmatically with the application `OpenTelemetry` instance after the context is ready.
 - The appender is downstream of the redaction boundary and cannot receive raw events.
 - If no compatible OTel log provider/exporter exists, console JSON continues and logging does not fail requests.

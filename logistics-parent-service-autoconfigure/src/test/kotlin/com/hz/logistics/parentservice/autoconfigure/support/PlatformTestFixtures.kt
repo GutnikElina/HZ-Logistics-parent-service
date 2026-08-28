@@ -42,7 +42,12 @@ object PlatformTestFixtures {
             .issuer(issuer)
             .issuedAt(now.minusSeconds(60))
             .expiresAt(now.plusSeconds(300))
-        claims.forEach { (name, value) -> builder.claim(name, value) }
+        claims.forEach { (name, value) ->
+            // Spring Security 7.1 declares JWT claim values as non-null.
+            // A null fixture value is represented by an absent claim, which
+            // matches the platform's expected authorization outcome.
+            value?.let { builder.claim(name, it) }
+        }
         return builder.build()
     }
 

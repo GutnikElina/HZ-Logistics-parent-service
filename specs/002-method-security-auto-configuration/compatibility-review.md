@@ -2,7 +2,7 @@
 
 **Review scope:** implemented feature `002-method-security-auto-configuration`
 
-**Baseline:** platform `0.1.0`, Spring Boot `4.0.7`, Java `21`
+**Baseline:** platform `0.1.0`, Spring Boot `4.1.0`, Java `21`
 **Disposition:** additive MINOR capability; no module or consumer-property migration is required
 
 ## Contract impact

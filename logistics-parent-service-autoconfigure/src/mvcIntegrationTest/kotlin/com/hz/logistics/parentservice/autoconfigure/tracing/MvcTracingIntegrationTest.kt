@@ -170,7 +170,7 @@ class MvcTracingFixtureController(
 private class TraceParentAssertion(private val value: String?) {
 
     fun isValid(): TraceParentAssertion {
-        assertThat(value).matches("00-[0-9a-f]{32}-[0-9a-f]{16}-0[01]")
+        assertThat(value).matches("00-[0-9a-f]{32}-[0-9a-f]{16}-[0-9a-f]{2}")
         return this
     }
 

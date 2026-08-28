@@ -12,7 +12,7 @@ Represents the only three consumable platform artifacts.
 | `autoconfigure` | Module coordinate | Exactly `logistics-parent-service-autoconfigure`; owns all Kotlin implementation and conditional auto-configuration. |
 | `starter` | Module coordinate | Exactly `logistics-parent-service-starter`; contains dependency declarations only. |
 | `version` | Semantic version | One aligned release version for all three modules. |
-| `springBootBaseline` | Version | Exactly `4.0.7` for this feature. |
+| `springBootBaseline` | Version | Exactly `4.1.0` for this feature. |
 | `javaTarget` | Integer | Exactly `21`. |
 
 Validation invariants:

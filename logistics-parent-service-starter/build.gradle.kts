@@ -28,7 +28,7 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test") {
         // Mockito 5.20 imports the JUnit 5.13 BOM and conflicts with the
-        // JUnit 6 line managed by Spring Boot 4.0.7. These contract tests do
+        // JUnit 6 line managed by Spring Boot 4.1.0. These contract tests do
         // not use Mockito.
         exclude(group = "org.mockito", module = "mockito-junit-jupiter")
     }

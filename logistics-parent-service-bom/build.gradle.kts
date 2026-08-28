@@ -23,6 +23,7 @@ publishing {
 }
 
 val springBootVersion: String by project
+val opentelemetryLogbackAppenderVersion: String by project
 val kotlinVersion: String by project
 val projectGroup: String by project
 val platformVersion: String by project
@@ -92,7 +93,7 @@ dependencies {
 
         // This appender is not managed by Spring Boot and is intentionally
         // pinned to the approved compatibility-tested alpha release.
-        api("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha")
+        api("io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:$opentelemetryLogbackAppenderVersion")
     }
 
     // A java-platform project cannot apply the Java or Kotlin JVM plugin, so

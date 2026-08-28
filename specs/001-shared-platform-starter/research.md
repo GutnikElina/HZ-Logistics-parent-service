@@ -1,20 +1,20 @@
 # Phase 0 Research: Shared Platform Starter
 
-This research resolves every technical unknown for the Spring Boot 4.0.7 platform baseline. The feature specification and constitution remain binding; no decision below removes or weakens a requirement.
+This research resolves every technical unknown for the Spring Boot 4.1.0 platform baseline. The feature specification and constitution remain binding; no decision below removes or weakens a requirement.
 
 ## 1. Build and Compatibility Baseline
 
-**Decision**: Pin the Gradle Wrapper to 9.3.0, compile Kotlin 2.2.21 with a Java 21 toolchain and JVM target, and pin Spring Boot to exactly 4.0.7. Import `org.springframework.boot:spring-boot-dependencies:4.0.7` into the platform BOM and do not use a dynamic or `latest` version.
+**Decision**: Pin the Gradle Wrapper to 9.3.0, compile Kotlin 2.3.21 with a Java 21 toolchain and JVM target, and pin Spring Boot to exactly 4.1.0. Import `org.springframework.boot:spring-boot-dependencies:4.1.0` into the platform BOM and do not use a dynamic or `latest` version.
 
-**Rationale**: Spring Boot 4.0.7 supports Gradle 8.14+ and 9.x. Gradle 9.3.0 runs on Java 21 and embeds the same Kotlin 2.2.21 line managed by Spring Boot 4.0.7. The Boot BOM resolves Spring Framework 7.0.8, Spring Security 7.0.6, Micrometer 1.16.6, Micrometer Tracing 1.6.6, OpenTelemetry 1.55.0, Kotlin 2.2.21, and Logback 1.5.34. Pinning all three baselines prevents an implicit Spring Boot upgrade.
+**Rationale**: Spring Boot 4.1.0 supports Gradle 8.14+ and 9.x. Gradle 9.3.0 runs on Java 21 and is compatible with the Kotlin 2.3.21 line managed by Spring Boot 4.1.0. The Boot BOM resolves Spring Framework 7.0.8, Spring Security 7.1.0, Micrometer 1.17.0, Micrometer Tracing 1.7.0, OpenTelemetry 1.62.0, Kotlin 2.3.21, and Logback 1.5.34. Pinning all three baselines prevents an implicit Spring Boot upgrade.
 
 **Alternatives considered**: Gradle 8.14.4 is supported and can run on Java 21, but its embedded Kotlin line differs from the application compiler line. A current/latest Gradle or Boot selector was rejected because it makes compatibility non-reproducible. Java 17 was rejected because the constitution requires Java 21.
 
-**Sources**: [Spring Boot 4.0 Gradle plugin requirements](https://docs.spring.io/spring-boot/4.0/gradle-plugin/introduction.html), [Spring Boot 4.0.7 managed versions](https://docs.spring.io/spring-boot/4.0/appendix/dependency-versions/index.html), [Gradle Java/Kotlin compatibility](https://docs.gradle.org/current/userguide/compatibility.html).
+**Sources**: [Spring Boot 4.1 Gradle plugin requirements](https://docs.spring.io/spring-boot/4.1/gradle-plugin/introduction.html), [Spring Boot 4.1.0 managed versions](https://docs.spring.io/spring-boot/4.1/appendix/dependency-versions/index.html), [Gradle Java/Kotlin compatibility](https://docs.gradle.org/current/userguide/compatibility.html).
 
 ## 2. Three-Module Build Shape and BOM Ownership
 
-**Decision**: Use a non-published root aggregator that includes exactly `logistics-parent-service-bom`, `logistics-parent-service-autoconfigure`, and `logistics-parent-service-starter`. Implement the BOM with Gradle's `java-platform` plugin, import the Spring Boot 4.0.7 BOM, constrain both external dependencies and the two consumable platform artifacts, and make consumer validation use the platform for versionless dependency declarations.
+**Decision**: Use a non-published root aggregator that includes exactly `logistics-parent-service-bom`, `logistics-parent-service-autoconfigure`, and `logistics-parent-service-starter`. Implement the BOM with Gradle's `java-platform` plugin, import the Spring Boot 4.1.0 BOM, constrain both external dependencies and the two consumable platform artifacts, and make consumer validation use the platform for versionless dependency declarations.
 
 **Rationale**: An aggregator is Gradle build infrastructure rather than a fourth platform artifact. A `java-platform` project is the native Gradle model for a BOM and can align Spring, security, observability, logging, Kotlin, and test coordinates. The starter stays thin and the auto-configuration module remains the single implementation location.
 
@@ -24,13 +24,13 @@ This research resolves every technical unknown for the Spring Boot 4.0.7 platfor
 
 ## 3. Starter Dependency Coordinates Without a Forced Web Stack
 
-**Decision**: The thin starter exposes the auto-configuration module and non-web prerequisites based on Spring Boot 4.0.7: OAuth2 resource-server/Jose support, Actuator, `spring-boot-starter-opentelemetry` for the complete Boot-managed Micrometer/OpenTelemetry tracing and OTLP graph, and the approved OpenTelemetry Logback appender because that appender is not part of Spring Boot. It must not depend on `spring-boot-starter-web` or `spring-boot-starter-webflux`. The auto-configuration module compiles against MVC, Servlet, WebFlux, and reactive security APIs as optional/compile-only dependencies and isolates their references by branch.
+**Decision**: The thin starter exposes the auto-configuration module and non-web prerequisites based on Spring Boot 4.1.0: OAuth2 resource-server/Jose support, Actuator, `spring-boot-starter-opentelemetry` for the complete Boot-managed Micrometer/OpenTelemetry tracing and OTLP graph, and the approved OpenTelemetry Logback appender because that appender is not part of Spring Boot. It must not depend on `spring-boot-starter-web` or `spring-boot-starter-webflux`. The auto-configuration module compiles against MVC, Servlet, WebFlux, and reactive security APIs as optional/compile-only dependencies and isolates their references by branch.
 
 **Rationale**: Spring Security's resource-server and Jose libraries validate JWTs without choosing a server runtime. Spring Boot's dedicated OpenTelemetry starter already brings its Micrometer metrics/tracing integration, OpenTelemetry support, and OTLP exporters, so listing those modules separately duplicates the dependency graph and weakens Boot's auto-configuration ownership. The OTel Logback appender remains separate because Spring Boot explicitly leaves that integration to the application. Compile-only web APIs allow the shared jar to contain both implementations while leaving the consumer responsible for selecting its single web starter.
 
 **Alternatives considered**: Making both web starters transitive would force conflicting application models. Making neither branch available in the auto-configuration jar would require separate published artifacts. Treating the selected web stack as a runtime-only platform dependency was rejected because it would make startup fail for consumers that did not declare it.
 
-**Sources**: [Spring Boot 4.0.7 managed coordinates](https://docs.spring.io/spring-boot/4.0/appendix/dependency-versions/coordinates.html), [Spring Security resource-server JWT dependencies](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html).
+**Sources**: [Spring Boot 4.1.0 managed coordinates](https://docs.spring.io/spring-boot/4.1/appendix/dependency-versions/coordinates.html), [Spring Security resource-server JWT dependencies](https://docs.spring.io/spring-security/reference/servlet/oauth2/resource-server/jwt.html).
 
 ## 4. Auto-Configuration Registration and Branch Conditions
 
@@ -40,7 +40,7 @@ This research resolves every technical unknown for the Spring Boot 4.0.7 platfor
 
 **Alternatives considered**: Component scanning was rejected because library auto-configuration should be explicitly registered and ordered. One auto-configuration class containing both branches was rejected because absent optional types can cause linkage and condition-order problems. A single global “platform enabled” switch was rejected because it breaks independent override.
 
-**Source**: [Creating Spring Boot auto-configuration](https://docs.spring.io/spring-boot/4.0-SNAPSHOT/reference/features/developing-auto-configuration.html).
+**Source**: [Creating Spring Boot auto-configuration](https://docs.spring.io/spring-boot/4.1/reference/features/developing-auto-configuration.html).
 
 ## 5. Common Public Endpoint Pattern Contract
 
@@ -84,21 +84,21 @@ This research resolves every technical unknown for the Spring Boot 4.0.7 platfor
 
 **Decision**: Configure Micrometer Tracing over OpenTelemetry with W3C propagation as the platform default for inbound server instrumentation and outbound clients created from Spring Boot's auto-configured `RestClient.Builder`, `RestTemplateBuilder`, or `WebClient.Builder`. Use the active span trace/span identifiers for MDC, errors, and logs. If no active trace exists while producing an error, generate one valid correlation identifier for that error/log pair without treating it as a remote parent.
 
-**Rationale**: Spring Boot 4.0.7 directly supports the W3C propagation enum and automatically instruments its managed client builders. OpenTelemetry extraction ignores invalid carrier values rather than throwing; normal server instrumentation then starts a safe new trace. Propagation remains useful even when no exporter exists.
+**Rationale**: Spring Boot 4.1.0 directly supports the W3C propagation enum and automatically instruments its managed client builders. OpenTelemetry extraction ignores invalid carrier values rather than throwing; normal server instrumentation then starts a safe new trace. Propagation remains useful even when no exporter exists.
 
 **Alternatives considered**: B3-only propagation was rejected by FR-009. Hand-written request filters and client interceptors were rejected because they duplicate framework instrumentation and are easy to lose across reactive boundaries. Accepting a malformed `traceparent` as correlation was rejected by the W3C validity requirement.
 
-**Sources**: [Spring Boot trace propagation](https://docs.spring.io/spring-boot/4.0-SNAPSHOT/reference/actuator/tracing.html), [OpenTelemetry propagator requirements](https://opentelemetry.io/docs/specs/otel/context/api-propagators/), [Spring Boot 4 W3C propagation enum](https://docs.spring.io/spring-boot/4.0/api/java/org/springframework/boot/micrometer/tracing/autoconfigure/TracingProperties.Propagation.PropagationType.html).
+**Sources**: [Spring Boot trace propagation](https://docs.spring.io/spring-boot/4.1/reference/actuator/tracing.html), [OpenTelemetry propagator requirements](https://opentelemetry.io/docs/specs/otel/context/api-propagators/), [Spring Boot 4 W3C propagation enum](https://docs.spring.io/spring-boot/4.1/api/java/org/springframework/boot/micrometer/tracing/autoconfigure/TracingProperties.Propagation.PropagationType.html).
 
 ## 10. OTLP Activation and Failure Behavior
 
 **Decision**: Use `spring-boot-starter-opentelemetry` for tracing and OTLP auto-configuration. Keep tracing and local propagation enabled independently of export: no configured `logistics.parent-service.tracing.otlp.endpoint` means no trace exporter is activated, while a configured endpoint maps to Spring Boot's `management.opentelemetry.tracing.export.otlp.*` model or to the supported OTLP exporter builder customizers. Protocol, headers, timeout, compression, sampling, asynchronous export, and diagnostic-only exporter failure behavior remain part of the platform's canonical property contract. Tests cover no endpoint, a recording local HTTP collector, a rejecting/closed collector, and application-provided exporter customization.
 
-**Rationale**: Spring Boot 4.0.7 provides a dedicated OpenTelemetry starter, the Micrometer bridge, OTLP exporters, and builder customizers. Reusing that auto-configuration avoids a parallel SDK and ensures the platform only adapts its canonical namespace while retaining the requirement that collector absence or outage must not break business requests.
+**Rationale**: Spring Boot 4.1.0 provides a dedicated OpenTelemetry starter, the Micrometer bridge, OTLP exporters, and builder customizers. Reusing that auto-configuration avoids a parallel SDK and ensures the platform only adapts its canonical namespace while retaining the requirement that collector absence or outage must not break business requests.
 
 **Alternatives considered**: Always exporting to localhost was rejected because no endpoint must be a valid local-only mode. Synchronous export on the request thread was rejected as a reliability and latency risk. Using the OpenTelemetry Java agent was rejected because this feature is a reusable starter library.
 
-**Sources**: [Spring Boot OpenTelemetry tracing with OTLP](https://docs.spring.io/spring-boot/4.0-SNAPSHOT/reference/actuator/tracing.html), [Spring Boot OpenTelemetry support](https://docs.spring.io/spring-boot/4.0/reference/actuator/observability.html).
+**Sources**: [Spring Boot OpenTelemetry tracing with OTLP](https://docs.spring.io/spring-boot/4.1/reference/actuator/tracing.html), [Spring Boot OpenTelemetry support](https://docs.spring.io/spring-boot/4.1/reference/actuator/observability.html).
 
 ## 11. Micrometer Metrics
 
@@ -132,13 +132,13 @@ This research resolves every technical unknown for the Spring Boot 4.0.7 platfor
 
 ## 14. Approved OpenTelemetry Logback Appender Compatibility
 
-**Decision**: Pin `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha` explicitly in the platform BOM and install its `OpenTelemetryAppender` with the application `OpenTelemetry` instance after startup. Place it behind the redaction boundary. Add a dependency-resolution test proving OpenTelemetry API 1.55.0, Logback 1.5.34, and appender 2.21.0-alpha; add a runtime test that initializes Logback, emits a correlated redacted event, and verifies the controlled OpenTelemetry log sink receives only sanitized fields.
+**Decision**: Pin `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.28.0-alpha` explicitly in the platform BOM and install its `OpenTelemetryAppender` with the application `OpenTelemetry` instance after startup. Place it behind the redaction boundary. Add a dependency-resolution test proving OpenTelemetry API 1.62.0, Logback 1.5.34, and appender 2.28.0-alpha; add a runtime test that initializes Logback, emits a correlated redacted event, and verifies the controlled OpenTelemetry log sink receives only sanitized fields.
 
-**Rationale**: OpenTelemetry Java Instrumentation 2.21.0 targets OpenTelemetry SDK 1.55.0, exactly the version managed by Spring Boot 4.0.7. The appender supports Logback 1.0 and later, which includes Boot's 1.5.34. Spring Boot documents that third-party OTel appenders require `logback-spring.xml` configuration and programmatic access to the `OpenTelemetry` bean. The artifact is still alpha, so an explicit pin and runtime compatibility gate are mandatory.
+**Rationale**: OpenTelemetry Java Instrumentation 2.28.0 targets OpenTelemetry SDK 1.62.0, exactly the version managed by Spring Boot 4.1.0. The appender supports Logback 1.0 and later, which includes Boot's 1.5.34. Spring Boot documents that third-party OTel appenders require `logback-spring.xml` configuration and programmatic access to the `OpenTelemetry` bean. The artifact is still alpha, so an explicit pin and runtime compatibility gate are mandatory.
 
 **Alternatives considered**: Replacing the constitution-approved artifact was rejected. Allowing its latest alpha version was rejected because alpha APIs can break. Attaching it beside the redacting appender was rejected because raw events could escape. Treating coordinate alignment alone as sufficient was rejected because initialization and event-shape compatibility are runtime concerns.
 
-**Sources**: [OpenTelemetry Java Instrumentation 2.21.0 release](https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/tag/v2.21.0), [OpenTelemetry Logback appender guide](https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/v2.21.0/instrumentation/logback/logback-appender-1.0/library/README.md), [Spring Boot OpenTelemetry logging integration](https://docs.spring.io/spring-boot/4.0/reference/actuator/loggers.html), [Spring Boot 4.0.7 BOM](https://central.sonatype.com/artifact/org.springframework.boot/spring-boot-dependencies/4.0.7).
+**Sources**: [OpenTelemetry Java Instrumentation 2.28.0 release](https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/tag/v2.28.0), [OpenTelemetry Logback appender guide](https://github.com/open-telemetry/opentelemetry-java-instrumentation/blob/v2.28.0/instrumentation/logback/logback-appender-1.0/library/README.md), [Spring Boot OpenTelemetry logging integration](https://docs.spring.io/spring-boot/4.1/reference/actuator/loggers.html), [Spring Boot 4.1.0 BOM](https://central.sonatype.com/artifact/org.springframework.boot/spring-boot-dependencies/4.1.0).
 
 ## 15. Verification Strategy
 

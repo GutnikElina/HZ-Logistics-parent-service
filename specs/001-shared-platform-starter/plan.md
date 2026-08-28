@@ -6,13 +6,13 @@
 
 ## Summary
 
-Build one reusable Kotlin/JVM platform for ten HZ Logistics services with exactly three Gradle Kotlin DSL platform modules: a dependency BOM, an auto-configuration implementation, and a thin starter. The implementation targets Java 21 and Spring Boot 4.0.7, keeps Servlet/MVC and Reactive/WebFlux dependencies optional, and activates separate conditional security and error branches for the selected web application type. Shared, independently overridable defaults provide issuer-based JWT resource-server security, nested role extraction, W3C trace propagation with optional OTLP export, Micrometer metrics, RFC 7807-compatible `ProblemDetail` errors, and structured Logback JSON events that are redacted before any console or OpenTelemetry sink receives them.
+Build one reusable Kotlin/JVM platform for ten HZ Logistics services with exactly three Gradle Kotlin DSL platform modules: a dependency BOM, an auto-configuration implementation, and a thin starter. The implementation targets Java 21 and Spring Boot 4.1.0, keeps Servlet/MVC and Reactive/WebFlux dependencies optional, and activates separate conditional security and error branches for the selected web application type. Shared, independently overridable defaults provide issuer-based JWT resource-server security, nested role extraction, W3C trace propagation with optional OTLP export, Micrometer metrics, RFC 7807-compatible `ProblemDetail` errors, and structured Logback JSON events that are redacted before any console or OpenTelemetry sink receives them.
 
 ## Technical Context
 
-**Language/Version**: Kotlin 2.2.21 (Spring Boot 4.0.7 managed line), Java 21 toolchain and bytecode target
+**Language/Version**: Kotlin 2.3.21 (Spring Boot 4.1.0 managed line), Java 21 toolchain and bytecode target
 
-**Primary Dependencies**: Gradle Wrapper 9.3.0 with Kotlin DSL; Spring Boot 4.0.7; Spring Framework 7.0.8; Spring Security 7.0.6 OAuth2 Resource Server/Jose; Spring Boot Actuator; `org.springframework.boot:spring-boot-starter-opentelemetry` for Micrometer/OpenTelemetry tracing and OTLP; and `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.21.0-alpha` for the required OTel logging sink. The Boot starter owns the Micrometer/OpenTelemetry runtime graph; the Logback appender is the only separately managed observability integration because Spring Boot does not ship it. Every runtime and test dependency version is supplied or constrained by `logistics-parent-service-bom`, primarily by importing the Spring Boot 4.0.7 BOM and adding an explicit constraint for the approved alpha appender.
+**Primary Dependencies**: Gradle Wrapper 9.3.0 with Kotlin DSL; Spring Boot 4.1.0; Spring Framework 7.0.8; Spring Security 7.1.0 OAuth2 Resource Server/Jose; Spring Boot Actuator; `org.springframework.boot:spring-boot-starter-opentelemetry` for Micrometer/OpenTelemetry tracing and OTLP; and `io.opentelemetry.instrumentation:opentelemetry-logback-appender-1.0:2.28.0-alpha` for the required OTel logging sink. The Boot starter owns the Micrometer/OpenTelemetry runtime graph; the Logback appender is the only separately managed observability integration because Spring Boot does not ship it. Every runtime and test dependency version is supplied or constrained by `logistics-parent-service-bom`, primarily by importing the Spring Boot 4.1.0 BOM and adding an explicit constraint for the approved alpha appender.
 
 **Storage**: N/A. The platform contains no persistence, business state, migrations, or domain data.
 
@@ -24,7 +24,7 @@ Build one reusable Kotlin/JVM platform for ten HZ Logistics services with exactl
 
 **Performance Goals**: No business throughput target is introduced. Trace export is asynchronous and exporter absence or outage must not block or fail request processing; redaction must run before serialization/export and remain bounded to each event; web-stack selection must add no infrastructure for the nonselected stack.
 
-**Constraints**: Exactly three platform modules; Gradle Kotlin DSL; Kotlin implementation; Java 21; Spring Boot exactly 4.0.7; no forced MVC or WebFlux; W3C `traceparent`; secure default denial; problem JSON without sensitive data; independent capability back-off; all configuration under `logistics.parent-service.*`; no service-specific logic; no publication or CI/CD work in this feature.
+**Constraints**: Exactly three platform modules; Gradle Kotlin DSL; Kotlin implementation; Java 21; Spring Boot exactly 4.1.0; no forced MVC or WebFlux; W3C `traceparent`; secure default denial; problem JSON without sensitive data; independent capability back-off; all configuration under `logistics.parent-service.*`; no service-specific logic; no publication or CI/CD work in this feature.
 
 **Scale/Scope**: One shared platform consumed by ten microservices; three modules; five independently configured capability areas; two equivalent web-stack branches; one non-web mode; reusable infrastructure and compatibility tests only.
 
@@ -41,7 +41,7 @@ Build one reusable Kotlin/JVM platform for ten HZ Logistics services with exactl
 | Web-stack neutrality and safe conditional back-off | PASS | Web dependencies are compile-only in auto-configuration and supplied only by the consuming application; branch conditions include classpath and selected application type. |
 | W3C/OpenTelemetry/OTLP, Micrometer, structured Logback JSON, correlation, and redaction | PASS | The BOM-aligned observability design uses W3C propagation, optional non-fatal OTLP export, Micrometer application APIs, and a pre-sink redaction boundary. |
 | Stable ProblemDetail contract and reusable-infrastructure quality gates | PASS | MVC, WebFlux, security, propagation, metrics, error, logging, and redaction suites are explicit release gates. |
-| Kotlin, Java 21, Gradle Kotlin DSL, Spring Boot 4.0.7, English artifacts | PASS | All baselines are pinned and all generated planning artifacts are English. |
+| Kotlin, Java 21, Gradle Kotlin DSL, Spring Boot 4.1.0, English artifacts | PASS | All baselines are pinned and all generated planning artifacts are English. |
 | Shared infrastructure only | PASS | No business models, persistence, service endpoints, policies, dashboards, or backend provisioning are designed. |
 
 No violation or temporary exception is required. Phase 0 may proceed.
@@ -94,7 +94,7 @@ specs/001-shared-platform-starter/
 ├── gradlew
 ├── gradlew.bat
 ├── logistics-parent-service-bom/
-│   └── build.gradle.kts                   # java-platform; Boot 4.0.7 import and all constraints
+│   └── build.gradle.kts                   # java-platform; Boot 4.1.0 import and all constraints
 ├── logistics-parent-service-autoconfigure/
 │   ├── build.gradle.kts                   # Kotlin library; optional web compile classpaths
 │   └── src/

@@ -1,7 +1,7 @@
 # Compatibility Review: Shared Platform Starter
 
 **Review date:** 2026-08-25
-**Baseline:** `0.1.0` / Spring Boot `4.0.7` / Java `21` / Gradle `9.3.0`  
+**Baseline:** `0.1.0` / Spring Boot `4.1.0` / Java `21` / Gradle `9.3.0`
 **Disposition:** Additive MINOR method-security capability; release-ready after the regression evidence listed below
 
 ## Scope and Semantic Versioning assessment
@@ -15,7 +15,7 @@ constitutional architecture: the root is an aggregator, and the only platform
 modules are the BOM, auto-configuration, and thin starter.
 
 The existing BOM alignment remains pinned, including Kotlin standard library and
-test constraints at `2.2.21`, so the resolved consumer graph matches the
+test constraints at `2.3.21`, so the resolved consumer graph matches the
 declared baseline.
 
 For subsequent releases:
@@ -76,7 +76,7 @@ business endpoints are not compatibility aliases or supported migration paths.
 - No domain model, persistence, business workflow, service endpoint, service
   metric, or service authorization policy is present.
 - All public configuration is under `logistics.parent-service.*`.
-- Spring Boot remains pinned to `4.0.7`; Kotlin is pinned to `2.2.21`; Java and
+- Spring Boot remains pinned to `4.1.0`; Kotlin is pinned to `2.3.21`; Java and
   bytecode target remain `21`.
 - The quickstart filter corrections and automatic method-security scenarios are
   documented; the focused commands and final `./gradlew check` provide the
